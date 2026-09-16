@@ -1,0 +1,178 @@
+import React from 'react';
+import { PageContainer } from '../components/layout/PageContainer';
+import { Card } from '../components/common/Card';
+import { StatCard } from '../components/dashboard/StatCard';
+import { Button } from '../components/common/Button';
+import {
+  mockPerformanceTrend,
+  mockSkillBreakdownChart,
+  mockProgressStats
+} from '../data/mockAnalytics';
+import {
+  ResponsiveContainer,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  Tooltip,
+  CartesianGrid,
+  BarChart,
+  Bar,
+  Cell
+} from 'recharts';
+import { Sparkles, Download, ArrowRight, TrendingUp, AlertTriangle } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { useToast } from '../context/ToastContext';
+
+export const ProgressDashboard: React.FC = () => {
+  const navigate = useNavigate();
+  const { showToast } = useToast();
+
+  return (
+    <PageContainer
+      title="Your Progress"
+      subtitle="Track your improvement over time and identify weak areas."
+    >
+      <div className="space-y-6 max-w-6xl mx-auto">
+        {/* Top Stat Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
+          <StatCard
+            title="Overall Score"
+            value={`${mockProgressStats.overallScore}%`}
+            changeBadge={`+${mockProgressStats.scoreImprovement}%`}
+            type="score"
+          />
+          <StatCard
+            title="Interviews Completed"
+            value={mockProgressStats.interviewsCompleted}
+            type="interviews"
+          />
+          <StatCard
+            title="Learning Streak"
+            value={`${mockProgressStats.learningStreak} days`}
+            type="streak"
+          />
+        </div>
+
+        {/* Charts Grid matching reference Screen 11 */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          {/* Left: Skill-wise Performance Bar Chart (6 cols) */}
+          <Card className="lg:col-span-6 p-6 border border-slate-200/80 bg-white">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-bold text-slate-900">
+                Skill-wise Performance
+              </h3>
+              <span className="text-xs text-slate-400">Current Readiness</span>
+            </div>
+
+            <div className="h-64 w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart
+                  data={mockSkillBreakdownChart}
+                  layout="vertical"
+                  margin={{ top: 5, right: 30, left: 40, bottom: 5 }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#E2E8F0" />
+                  <XAxis type="number" domain={[0, 100]} stroke="#94A3B8" fontSize={11} />
+                  <YAxis
+                    type="category"
+                    dataKey="skill"
+                    stroke="#64748B"
+                    fontSize={11}
+                    tickLine={false}
+                    width={90}
+                  />
+                  <Tooltip
+                    formatter={(val: any) => [`${val}%`, 'Readiness']}
+                    contentStyle={{
+                      backgroundColor: '#0F172A',
+                      borderRadius: '12px',
+                      color: '#fff',
+                      fontSize: '12px',
+                      border: 'none'
+                    }}
+                  />
+                  <Bar dataKey="score" radius={[0, 6, 6, 0]}>
+                    {mockSkillBreakdownChart.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.fill} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </Card>
+
+          {/* Right: Performance Trend Line Chart (6 cols) */}
+          <Card className="lg:col-span-6 p-6 border border-slate-200/80 bg-white">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-bold text-slate-900">
+                Performance Trend
+              </h3>
+              <span className="text-xs font-semibold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                +19 pts growth
+              </span>
+            </div>
+
+            <div className="h-64 w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart
+                  data={mockPerformanceTrend}
+                  margin={{ top: 10, right: 20, left: 0, bottom: 5 }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" />
+                  <XAxis dataKey="name" stroke="#94A3B8" fontSize={11} />
+                  <YAxis domain={[50, 100]} stroke="#94A3B8" fontSize={11} />
+                  <Tooltip
+                    formatter={(val: any) => [`${val}%`, 'Score']}
+                    contentStyle={{
+                      backgroundColor: '#0F172A',
+                      borderRadius: '12px',
+                      color: '#fff',
+                      fontSize: '12px',
+                      border: 'none'
+                    }}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="score"
+                    stroke="#4F46E5"
+                    strokeWidth={3}
+                    dot={{ fill: '#4F46E5', strokeWidth: 2, r: 5 }}
+                    activeDot={{ r: 7, fill: '#7C3AED' }}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          </Card>
+        </div>
+
+        {/* AI Insight Card matching reference Screen 11 */}
+        <Card className="p-6 bg-gradient-to-r from-indigo-50/90 via-purple-50/70 to-white border border-indigo-100 flex flex-col sm:flex-row sm:items-center justify-between gap-5">
+          <div className="flex items-start gap-4">
+            <div className="w-10 h-10 rounded-2xl bg-indigo-600 text-white flex items-center justify-center shrink-0 shadow-md shadow-indigo-600/20">
+              <Sparkles className="w-5 h-5" />
+            </div>
+            <div>
+              <h4 className="text-xs font-bold uppercase tracking-wider text-indigo-700">
+                AI Insight & Pattern Recognition
+              </h4>
+              <p className="text-xs sm:text-sm text-slate-800 font-medium mt-1 leading-relaxed max-w-2xl">
+                {mockProgressStats.aiInsight}
+              </p>
+            </div>
+          </div>
+
+          <Button
+            variant="gradient"
+            size="md"
+            onClick={() => navigate('/learning')}
+            icon={<ArrowRight className="w-4 h-4" />}
+            className="shrink-0 font-bold"
+          >
+            Start Remedial Plan
+          </Button>
+        </Card>
+      </div>
+    </PageContainer>
+  );
+};
