@@ -136,7 +136,7 @@ export const LearningPlan: React.FC = () => {
                         {day.topics.map((t) => (
                           <span
                             key={t}
-                            className="text-xs text-slate-600 bg-white border border-slate-200/80 px-2.5 py-1 rounded-lg font-medium shadow-2xs"
+                            className="text-xs text-slate-600 bg-white border border-slate-200/80 px-2.5 py-1 rounded-lg font-medium shadow-xs"
                           >
                             • {t}
                           </span>

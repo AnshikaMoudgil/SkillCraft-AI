@@ -11,7 +11,7 @@ export const Dashboard: React.FC = () => {
 
   return (
     <PageContainer
-      title={`Good morning, ${user.name.split(' ')[0]}! ☀️`}
+      title={`Welcome, ${user.name}!`}
       subtitle="Here's your progress and recommendations."
     >
       <div className="space-y-6">

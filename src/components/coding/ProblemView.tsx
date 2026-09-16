@@ -10,9 +10,9 @@ export interface ProblemViewProps {
 
 export const ProblemView: React.FC<ProblemViewProps> = ({ problem, onNextProblem }) => {
   return (
-    <div className="flex flex-col h-full bg-white rounded-2xl border border-slate-200/80 p-5 overflow-y-auto">
+    <div className="flex flex-col h-full bg-white rounded-2xl border border-slate-200/80 p-5 shadow-xs overflow-hidden">
       {/* Problem Header */}
-      <div className="flex items-center justify-between pb-4 border-b border-slate-100">
+      <div className="flex items-center justify-between pb-4 border-b border-slate-100 shrink-0">
         <div>
           <h2 className="text-xl font-bold text-slate-900">{problem.title}</h2>
           <div className="flex items-center gap-2 mt-2">
@@ -33,7 +33,7 @@ export const ProblemView: React.FC<ProblemViewProps> = ({ problem, onNextProblem
 
         <button
           onClick={onNextProblem}
-          className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 flex items-center gap-1 bg-indigo-50 hover:bg-indigo-100 px-3 py-1.5 rounded-lg transition-colors"
+          className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 flex items-center gap-1 bg-indigo-50 hover:bg-indigo-100 px-3 py-1.5 rounded-lg transition-colors shrink-0"
         >
           <span>Next Problem</span>
           <ArrowRight className="w-3.5 h-3.5" />
@@ -41,7 +41,7 @@ export const ProblemView: React.FC<ProblemViewProps> = ({ problem, onNextProblem
       </div>
 
       {/* Description */}
-      <div className="py-4 space-y-4 text-sm text-slate-700 leading-relaxed">
+      <div className="py-4 space-y-4 text-sm text-slate-700 leading-relaxed overflow-y-auto min-h-0 flex-1 pr-1">
         <p className="whitespace-pre-line">{problem.description}</p>
 
         {/* Examples */}

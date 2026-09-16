@@ -4,6 +4,7 @@ import { Card } from '../components/common/Card';
 import { Button } from '../components/common/Button';
 import { Badge } from '../components/common/Badge';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { resumeService } from '../services/resumeService';
 import { ResumeData } from '../types';
@@ -26,11 +27,13 @@ export const ResumeUpload: React.FC = () => {
   const [isParsing, setIsParsing] = useState(false);
   const [parsedData, setParsedData] = useState<ResumeData | null>(null);
 
+  const { user } = useAuth();
   const navigate = useNavigate();
   const { showToast } = useToast();
 
   const handleSimulatedUpload = async (uploadedFile?: File) => {
-    const targetFile = uploadedFile || new File([''], 'Anshika_Moudgil_Resume.pdf', { type: 'application/pdf' });
+    const defaultName = `${user.name.trim().replace(/\s+/g, '_')}_Resume.pdf`;
+    const targetFile = uploadedFile || new File([''], defaultName, { type: 'application/pdf' });
     setFile(targetFile);
     setIsParsing(true);
 
@@ -80,14 +83,18 @@ export const ResumeUpload: React.FC = () => {
               }}
               onDragLeave={() => setIsDragging(false)}
               onDrop={handleDrop}
-              className={`border-2 border-dashed rounded-3xl p-10 sm:p-14 text-center transition-all duration-200 ${
+              className={`border-2 border-dashed rounded-3xl p-8 sm:p-12 text-center transition-all duration-200 ${
                 isDragging
                   ? 'border-indigo-500 bg-indigo-50/50 scale-[1.01]'
                   : 'border-slate-300 hover:border-indigo-400 bg-slate-50/50 hover:bg-indigo-50/20'
               }`}
             >
-              <div className="w-20 h-20 mx-auto rounded-3xl bg-indigo-50 text-indigo-600 flex items-center justify-center mb-5 shadow-sm">
-                <UploadCloud className="w-10 h-10 animate-bounce" />
+              <div className="w-24 h-24 mx-auto rounded-3xl overflow-hidden mb-4 shadow-sm border border-indigo-100">
+                <img
+                  src="/images/resume-analysis.jpg"
+                  alt="Resume Analysis"
+                  className="w-full h-full object-cover"
+                />
               </div>
 
               <h3 className="text-lg sm:text-xl font-bold text-slate-800">
@@ -124,7 +131,7 @@ export const ResumeUpload: React.FC = () => {
                 AI is parsing your resume...
               </h4>
               <p className="text-xs text-slate-400 max-w-sm mx-auto">
-                Extracting technical skills, project architectures, and work chronology using Azure AI Document Intelligence.
+                Extracting technical skills, project architectures, and work chronology using AI Document Intelligence.
               </p>
             </div>
           ) : (
@@ -140,7 +147,7 @@ export const ResumeUpload: React.FC = () => {
                       Resume uploaded & parsed successfully ✓
                     </h4>
                     <p className="text-xs text-emerald-700">
-                      {parsedData?.fileName} ({parsedData?.fileSize}) • Ready for RAG interview generation
+                      {parsedData?.fileName} ({parsedData?.fileSize}) • Ready for personalized interview generation
                     </p>
                   </div>
                 </div>
@@ -221,7 +228,7 @@ export const ResumeUpload: React.FC = () => {
                         <span className="font-mono font-bold text-white text-sm">1.5 years</span>
                       </div>
                       <div className="flex items-center justify-between">
-                        <span className="text-slate-300">RAG Match Score</span>
+                        <span className="text-slate-300">Resume Match Score</span>
                         <span className="font-mono font-bold text-emerald-400 text-sm">92%</span>
                       </div>
                     </div>

@@ -25,7 +25,7 @@ export const Sidebar: React.FC = () => {
     { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { to: '/coding', label: 'Technical Sandbox', icon: Code2 },
     { to: '/interviews', label: 'Mock Interview', icon: MessageSquareText },
-    { to: '/resume', label: 'Resume & RAG', icon: FileText },
+    { to: '/resume', label: 'Resume', icon: FileText },
     { to: '/interview/report', label: 'Reports', icon: BarChart3 },
     { to: '/learning', label: 'Learning Plan', icon: BookOpen }
   ];
@@ -50,7 +50,7 @@ export const Sidebar: React.FC = () => {
         </div>
         <div>
           <h1 className="text-base font-bold text-white tracking-tight leading-none">
-            AI Interview Coach
+            SkillCraft AI
           </h1>
           <p className="text-[11px] text-indigo-300/80 font-medium tracking-wide mt-1">
             Practice. Improve. Get Hired.

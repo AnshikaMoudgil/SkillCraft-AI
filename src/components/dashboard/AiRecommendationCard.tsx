@@ -47,7 +47,7 @@ export const AiRecommendationCard: React.FC = () => {
             <div className="w-24 h-24 rounded-2xl bg-gradient-to-tr from-[#4F46E5] to-[#7C3AED] flex flex-col items-center justify-center text-white shadow-xl shadow-indigo-500/30">
               <Bot className="w-12 h-12 stroke-[1.75]" />
               <span className="text-[10px] font-extrabold tracking-wider uppercase mt-1 text-indigo-100">
-                Foundry AI
+                SkillCraft AI
               </span>
             </div>
             {/* Ambient status dot */}

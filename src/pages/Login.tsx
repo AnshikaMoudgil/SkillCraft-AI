@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { Button } from '../components/common/Button';
@@ -17,10 +17,11 @@ import {
 } from 'lucide-react';
 
 export const Login: React.FC = () => {
-  const [isLoginTab, setIsLoginTab] = useState(true);
-  const [email, setEmail] = useState('anshika.m@university.edu');
+  const location = useLocation();
+  const [isLoginTab, setIsLoginTab] = useState(location.pathname !== '/signup');
+  const [email, setEmail] = useState('devansh.sharma@example.com');
   const [password, setPassword] = useState('password123');
-  const [name, setName] = useState('Anshika Moudgil');
+  const [name, setName] = useState('Devansh Sharma');
   const [rememberMe, setRememberMe] = useState(true);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -43,7 +44,7 @@ export const Login: React.FC = () => {
     setTimeout(() => {
       let success = false;
       if (isLoginTab) {
-        success = login(email, password);
+        success = login(email, password, name);
       } else {
         success = signup(name, email, password);
       }
@@ -60,6 +61,7 @@ export const Login: React.FC = () => {
   };
 
   const handleOAuth = (provider: string) => {
+    login(email, 'oauth_pass', name);
     showToast(`Signed in with ${provider}`, 'success');
     navigate('/dashboard');
   };
@@ -79,7 +81,7 @@ export const Login: React.FC = () => {
           </div>
           <div>
             <h1 className="text-xl font-bold tracking-tight text-white leading-none">
-              AI Interview Coach
+              SkillCraft AI
             </h1>
             <p className="text-xs text-indigo-300 font-medium tracking-wide mt-1">
               Practice. Improve. Get Hired.
@@ -118,24 +120,31 @@ export const Login: React.FC = () => {
             ))}
           </div>
 
-          {/* Isometric AI Character Illustration Mockup */}
-          <div className="pt-6 relative">
-            <div className="relative mx-auto max-w-sm rounded-2xl bg-gradient-to-tr from-slate-900/90 to-indigo-950/90 p-5 border border-indigo-500/30 shadow-2xl backdrop-blur-md">
-              <div className="flex items-center justify-between pb-3 border-b border-slate-800">
-                <div className="flex items-center gap-2">
-                  <span className="w-2.5 h-2.5 rounded-full bg-rose-500" />
-                  <span className="w-2.5 h-2.5 rounded-full bg-amber-500" />
-                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
+          {/* Isometric AI Character Illustration Card */}
+          <div className="pt-4 relative">
+            <div className="relative mx-auto max-w-sm rounded-2xl bg-gradient-to-tr from-slate-900/90 to-indigo-950/90 p-3.5 border border-indigo-500/30 shadow-2xl backdrop-blur-md overflow-hidden">
+              <div className="rounded-xl overflow-hidden mb-3 border border-indigo-500/20 shadow-inner">
+                <img
+                  src="/images/auth-hero.jpg"
+                  alt="SkillCraft AI Interview Coaching"
+                  className="w-full h-36 object-cover object-center transform hover:scale-105 transition-transform duration-500"
+                />
+              </div>
+              <div className="flex items-center justify-between pb-2 border-b border-slate-800">
+                <div className="flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-rose-500" />
+                  <span className="w-2 h-2 rounded-full bg-amber-500" />
+                  <span className="w-2 h-2 rounded-full bg-emerald-500" />
                 </div>
                 <span className="text-[11px] font-mono text-indigo-300 flex items-center gap-1">
-                  <Bot className="w-3.5 h-3.5" /> AI Interview Simulation
+                  <Bot className="w-3.5 h-3.5" /> SkillCraft AI Simulation
                 </span>
               </div>
-              <div className="py-4 space-y-2 text-xs font-mono">
-                <div className="p-2.5 rounded-lg bg-indigo-900/40 border border-indigo-500/20 text-indigo-200">
+              <div className="py-2.5 space-y-1.5 text-[11px] font-mono">
+                <div className="p-2 rounded-lg bg-indigo-900/40 border border-indigo-500/20 text-indigo-200">
                   <span className="text-indigo-400 font-bold">AI:</span> "Explain how you optimize SQL queries using B-Tree indexing."
                 </div>
-                <div className="p-2.5 rounded-lg bg-emerald-900/30 border border-emerald-500/20 text-emerald-200">
+                <div className="p-2 rounded-lg bg-emerald-900/30 border border-emerald-500/20 text-emerald-200">
                   <span className="text-emerald-400 font-bold">Candidate:</span> "By leveraging covering indexes to prevent random I/O lookups..."
                 </div>
               </div>
@@ -187,7 +196,7 @@ export const Login: React.FC = () => {
 
           <div className="mb-6">
             <h2 className="text-2xl font-extrabold text-slate-900 tracking-tight">
-              {isLoginTab ? 'Welcome Back!' : 'Create an Account'}
+              {isLoginTab ? 'Welcome Back, Devansh Sharma!' : 'Create an Account'}
             </h2>
             <p className="text-xs sm:text-sm text-slate-500 mt-1">
               {isLoginTab
@@ -214,7 +223,7 @@ export const Login: React.FC = () => {
                     type="text"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    placeholder="Anshika Moudgil"
+                    placeholder="Devansh Sharma"
                     className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 transition-all"
                   />
                 </div>
@@ -231,7 +240,7 @@ export const Login: React.FC = () => {
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="you@example.com"
+                  placeholder="devansh.sharma@example.com"
                   className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 transition-all"
                 />
               </div>
@@ -301,12 +310,13 @@ export const Login: React.FC = () => {
           </div>
 
           {/* Social OAuth Buttons */}
-          <div className="grid grid-cols-2 gap-3">
+          <div>
             <button
+              type="button"
               onClick={() => handleOAuth('Google')}
-              className="flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl border border-slate-200 hover:bg-slate-50 transition-colors text-xs font-bold text-slate-700"
+              className="w-full flex items-center justify-center gap-2.5 py-2.5 px-4 rounded-xl border border-slate-200 hover:bg-slate-50 transition-colors text-xs font-bold text-slate-700 shadow-xs"
             >
-              <svg className="w-4 h-4" viewBox="0 0 24 24">
+              <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
                 <path
                   fill="#4285F4"
                   d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.66-5.17 3.66-9.17z"
@@ -324,20 +334,7 @@ export const Login: React.FC = () => {
                   d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"
                 />
               </svg>
-              <span>Google</span>
-            </button>
-
-            <button
-              onClick={() => handleOAuth('Microsoft')}
-              className="flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl border border-slate-200 hover:bg-slate-50 transition-colors text-xs font-bold text-slate-700"
-            >
-              <svg className="w-4 h-4" viewBox="0 0 24 24">
-                <rect width="11" height="11" fill="#F25022" />
-                <rect x="13" width="11" height="11" fill="#7FBA00" />
-                <rect y="13" width="11" height="11" fill="#00A4EF" />
-                <rect x="13" y="13" width="11" height="11" fill="#FFB900" />
-              </svg>
-              <span>Microsoft</span>
+              <span>Continue with Google</span>
             </button>
           </div>
 
@@ -356,3 +353,4 @@ export const Login: React.FC = () => {
     </div>
   );
 };
+

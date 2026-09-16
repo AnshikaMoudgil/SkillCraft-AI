@@ -115,16 +115,16 @@ export const CodingSandbox: React.FC = () => {
       title="Technical Coding Sandbox"
       subtitle={`${currentProblem.title} (${currentProblem.difficulty})`}
     >
-      <div className="space-y-4">
+      <div className="space-y-6 pb-12">
         {/* Main 3-Column IDE Layout matching reference Screen 6 */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 h-[580px]">
-          {/* Left: Problem Description (3.5 columns) */}
-          <div className="lg:col-span-4 h-full">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 min-h-[540px] lg:h-[620px]">
+          {/* Left: Problem Description (4 columns) */}
+          <div className="lg:col-span-4 h-[440px] lg:h-full min-h-0 flex flex-col">
             <ProblemView problem={currentProblem} onNextProblem={handleNextProblem} />
           </div>
 
-          {/* Center: Code Editor Area (5.5 columns) */}
-          <div className="lg:col-span-5 h-full">
+          {/* Center: Code Editor Area (5 columns) */}
+          <div className="lg:col-span-5 h-[500px] lg:h-full min-h-0 flex flex-col">
             <CodeEditorArea
               code={code}
               onChange={setCode}
@@ -139,7 +139,7 @@ export const CodingSandbox: React.FC = () => {
           </div>
 
           {/* Right: AI Coding Coach (3 columns) */}
-          <div className="lg:col-span-3 h-full">
+          <div className="lg:col-span-3 h-[440px] lg:h-full min-h-0 flex flex-col">
             <AiCodingCoachPanel
               onGiveHint={handleGiveHint}
               onExplainError={handleExplainError}
@@ -151,7 +151,7 @@ export const CodingSandbox: React.FC = () => {
         </div>
 
         {/* Below Editor: Test Results Panel */}
-        <div>
+        <div className="w-full pt-1">
           <TestResultsPanel results={testResults} isRunning={isRunning} />
         </div>
       </div>

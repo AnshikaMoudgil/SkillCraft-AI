@@ -46,6 +46,7 @@ export const CodeEditorArea: React.FC<CodeEditorAreaProps> = ({
             className="bg-[#0E223F] text-slate-200 border border-slate-700 text-xs font-semibold rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-indigo-500 cursor-pointer"
           >
             <option value="Java">Java 17</option>
+            <option value="C++">C++ (GCC 12)</option>
             <option value="Python">Python 3.11</option>
             <option value="JavaScript">JavaScript (ES6)</option>
           </select>

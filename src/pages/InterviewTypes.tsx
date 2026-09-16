@@ -42,11 +42,11 @@ export const InterviewTypes: React.FC = () => {
     {
       id: 'resume',
       title: 'Resume Based Interview',
-      description: 'AI extracts your past projects, technology stack, and work history using RAG to ask targeted contextual questions.',
+      description: 'AI extracts your past projects, technology stack, and work history to ask targeted contextual questions.',
       icon: FileText,
       color: 'bg-cyan-50 text-cyan-600 group-hover:bg-cyan-600 group-hover:text-white',
       borderHover: 'hover:border-cyan-300',
-      badge: 'RAG Powered',
+      badge: 'Resume Tailored',
       tags: ['Project Deep-Dive', 'Tech Stack', 'STAR Method'],
       targetPath: '/resume'
     },
@@ -71,7 +71,7 @@ export const InterviewTypes: React.FC = () => {
       <div className="space-y-6">
         <div className="max-w-2xl">
           <p className="text-sm text-slate-600">
-            Each mode features real-time adaptive questioning powered by Microsoft Foundry AI models.
+            Each mode features real-time adaptive questioning powered by advanced AI models.
             Select your preferred practice mode below to begin.
           </p>
         </div>

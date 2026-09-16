@@ -49,7 +49,7 @@ export const mockTranscriptConversation: ChatMessage[] = [
   {
     id: 'msg-1',
     sender: 'ai',
-    text: 'Hello Anshika! Welcome to your technical mock interview. Let us begin with your background. Explain your featured machine learning project.',
+    text: 'Hello! Welcome to your technical mock interview. Let us begin with your background. Explain your featured machine learning project.',
     timestamp: '02:12',
     topic: 'Project Deep Dive'
   },

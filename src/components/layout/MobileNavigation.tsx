@@ -9,7 +9,11 @@ import {
   BookOpen,
   X,
   Sparkles,
-  LogOut
+  LogOut,
+  Mic,
+  Video,
+  FileSpreadsheet,
+  TrendingUp
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { Avatar } from '../common/Avatar';
@@ -26,12 +30,12 @@ export const MobileDrawer: React.FC<MobileNavigationProps> = ({ isOpen, onClose 
     { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { to: '/coding', label: 'Technical Sandbox', icon: Code2 },
     { to: '/interviews', label: 'Mock Interview', icon: MessageSquareText },
-    { to: '/resume', label: 'Resume & RAG', icon: FileText },
-    { to: '/interview/voice', label: 'Voice Interview', icon: MessageSquareText },
-    { to: '/interview/live', label: 'Live Interview', icon: MessageSquareText },
-    { to: '/interview/transcript', label: 'Transcript & AI', icon: FileText },
+    { to: '/resume', label: 'Resume', icon: FileText },
+    { to: '/interview/voice', label: 'Voice Interview', icon: Mic },
+    { to: '/interview/live', label: 'Live Interview', icon: Video },
+    { to: '/interview/transcript', label: 'Transcript & AI', icon: FileSpreadsheet },
     { to: '/interview/report', label: 'Reports', icon: BarChart3 },
-    { to: '/progress', label: 'Progress Stats', icon: BarChart3 },
+    { to: '/progress', label: 'Progress Stats', icon: TrendingUp },
     { to: '/learning', label: 'Learning Plan', icon: BookOpen }
   ];
 
@@ -53,7 +57,7 @@ export const MobileDrawer: React.FC<MobileNavigationProps> = ({ isOpen, onClose 
             <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-indigo-500 to-purple-500 flex items-center justify-center text-white">
               <Sparkles className="w-4 h-4" />
             </div>
-            <span className="font-bold text-sm">AI Interview Coach</span>
+            <span className="font-bold text-sm">SkillCraft AI</span>
           </div>
           <button onClick={onClose} className="p-1 rounded-lg text-slate-400 hover:text-white">
             <X className="w-5 h-5" />

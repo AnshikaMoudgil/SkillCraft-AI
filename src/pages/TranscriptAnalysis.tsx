@@ -78,8 +78,8 @@ export const TranscriptAnalysis: React.FC = () => {
 
         {/* Main Grid: Transcript Timeline (Left) + Communication Analysis (Right) */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          {/* Left / Center: Conversation Timeline matching reference Screen 9 */}
-          <div className="lg:col-span-8">
+          {/* Left / Center: Conversation Timeline */}
+          <div className={`lg:col-span-8 ${activeTab === 'analysis' ? 'hidden lg:block' : 'block'}`}>
             <Card className="p-6 sm:p-7 border border-slate-200/80 space-y-4">
               <div className="flex items-center justify-between pb-4 border-b border-slate-100">
                 <div className="flex items-center gap-2">
@@ -130,8 +130,8 @@ export const TranscriptAnalysis: React.FC = () => {
             </Card>
           </div>
 
-          {/* Right: Communication Analysis matching reference Screen 9 */}
-          <div className="lg:col-span-4 space-y-6">
+          {/* Right: Communication Analysis */}
+          <div className={`lg:col-span-4 space-y-6 ${activeTab === 'transcript' ? 'hidden lg:block' : 'block'}`}>
             <Card className="p-6 border border-slate-200/80 space-y-5">
               <div className="flex items-center justify-between pb-3 border-b border-slate-100">
                 <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">

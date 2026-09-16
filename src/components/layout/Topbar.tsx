@@ -49,7 +49,7 @@ export const Topbar: React.FC<TopbarProps> = ({
           ) : (
             <div className="flex items-center gap-2">
               <span className="text-base sm:text-lg font-bold text-slate-900">
-                Good morning, {user.name.split(' ')[0]}! ☀️
+                Welcome, {user.name}!
               </span>
             </div>
           )}

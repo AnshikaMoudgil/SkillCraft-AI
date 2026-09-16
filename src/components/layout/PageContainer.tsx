@@ -66,7 +66,7 @@ export const PageContainer: React.FC<PageContainerProps> = ({
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5">
               {[
                 { name: 'Azure OpenAI', sub: 'Foundry Models', icon: Brain, color: 'text-blue-600 bg-blue-50' },
-                { name: 'Azure AI Search', sub: 'RAG Knowledge', icon: Search, color: 'text-cyan-600 bg-cyan-50' },
+                { name: 'Azure AI Search', sub: 'Knowledge Base', icon: Search, color: 'text-cyan-600 bg-cyan-50' },
                 { name: 'Azure Speech', sub: 'STT & Neural TTS', icon: Mic, color: 'text-purple-600 bg-purple-50' },
                 { name: 'Foundry Agent', sub: 'Adaptive Flow', icon: GitBranch, color: 'text-pink-600 bg-pink-50' },
                 { name: 'Evaluation', sub: 'Accuracy Rubric', icon: ShieldCheck, color: 'text-emerald-600 bg-emerald-50' },

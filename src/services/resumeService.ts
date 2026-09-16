@@ -20,7 +20,7 @@ export const resumeService = {
     await new Promise((res) => setTimeout(res, 1200));
 
     return {
-      fileName: file.name || 'Anshika_Moudgil_Resume.pdf',
+      fileName: file.name || 'Candidate_Resume.pdf',
       fileSize: `${(file.size / (1024 * 1024)).toFixed(2)} MB`,
       parsedDate: '16 Sep 2026',
       skills: ['Java', 'Python', 'Machine Learning', 'SQL', 'DSA', 'Spring Boot', 'React', 'Git', 'Docker'],

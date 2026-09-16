@@ -25,7 +25,7 @@ export const QuickActions: React.FC = () => {
     },
     {
       title: 'Upload Resume',
-      description: 'Extract skills & project RAG questions',
+      description: 'Extract skills & personalized questions',
       icon: FileUp,
       path: '/resume',
       color: 'bg-blue-50 text-blue-600 group-hover:bg-blue-600 group-hover:text-white',

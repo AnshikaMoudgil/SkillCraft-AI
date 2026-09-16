@@ -48,6 +48,24 @@ You can return the answer in any order.`,
         return new int[]{};
     }
 }`,
+      'C++': `#include <vector>
+#include <unordered_map>
+
+class Solution {
+public:
+    std::vector<int> twoSum(std::vector<int>& nums, int target) {
+        // AI Coding Coach: Use an unordered_map for O(n) average lookup!
+        std::unordered_map<int, int> map;
+        for (int i = 0; i < nums.size(); i++) {
+            int complement = target - nums[i];
+            if (map.find(complement) != map.end()) {
+                return {map[complement], i};
+            }
+            map[nums[i]] = i;
+        }
+        return {};
+    }
+};`,
       Python: `class Solution:
     def twoSum(self, nums: list[int], target: int) -> list[int]:
         seen = {}
@@ -120,6 +138,23 @@ An input string is valid if:
         return stack.isEmpty();
     }
 }`,
+      'C++': `#include <string>
+#include <stack>
+
+class Solution {
+public:
+    bool isValid(std::string s) {
+        std::stack<char> stack;
+        for (char c : s) {
+            if (c == '(') stack.push(')');
+            else if (c == '{') stack.push('}');
+            else if (c == '[') stack.push(']');
+            else if (stack.empty() || stack.top() != c) return false;
+            else stack.pop();
+        }
+        return stack.empty();
+    }
+};`,
       Python: `class Solution:
     def isValid(self, s: str) -> bool:
         stack = []
