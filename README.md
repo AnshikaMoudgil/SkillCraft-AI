@@ -4,54 +4,36 @@ An intelligent, AI-powered mock interview and career preparation platform design
 
 ---
 
-## ✨ Features
+## 🏗️ Architecture Stack
 
-- 🎙️ **Interactive Voice & Live Interviews**: Realistic AI-driven mock interviews with speech recognition, dynamic follow-up questions, and natural conversational flow.
-- 💻 **Coding Sandbox**: Integrated coding editor with AI coaching, instant hints, test cases, and real-time execution feedback.
-- 📄 **Resume Intelligence**: Upload and parse resumes to generate personalized, role-specific interview scenarios and questions.
-- 📊 **Transcript & Performance Analysis**: Detailed behavioral and technical feedback, speech metrics, strengths, and areas for improvement.
-- 📈 **Personalized Learning Plans & Analytics**: Adaptive roadmaps, skill tracking, and comprehensive progress dashboards.
-
----
-
-## 🛠️ Tech Stack
-
-- **Frontend**: React 19, TypeScript, Vite
-- **Styling**: Tailwind CSS, Lucide Icons
-- **Data Visualization**: Recharts
-- **Tooling**: Oxlint
-
----
-
-## 🚦 Getting Started
-
-### Prerequisites
-
-- [Node.js](https://nodejs.org/) (version 18+ recommended)
-- [npm](https://www.npmjs.com/) or [yarn](https://yarnpkg.com/)
-
-### Installation
-
-1. **Clone the repository:**
-   ```bash
-   git clone https://github.com/AnshikaMoudgil/SkillCraft-AI.git
-   cd SkillCraft-AI
-   ```
-
-2. **Install dependencies:**
-   ```bash
-   npm install
-   ```
-
-3. **Start the development server:**
-   ```bash
-   npm run dev
-   ```
-
-4. **Build for production:**
-   ```bash
-   npm run build
-   ```
+```
+Frontend
+└── React + Vite (Port 5173)
+        ↓
+Backend
+└── FastAPI + Python (Port 8000)
+        ↓
+Database
+└── Supabase PostgreSQL
+        ↓
+Authentication
+└── Supabase Auth
+        ↓
+File Storage
+└── Supabase Storage
+        ↓
+AI
+└── Microsoft Foundry
+        ↓
+Agent
+└── Foundry Agent Service
+        ↓
+RAG
+└── Azure AI Search
+        ↓
+Voice
+└── Azure AI Speech
+```
 
 ---
 
@@ -59,20 +41,83 @@ An intelligent, AI-powered mock interview and career preparation platform design
 
 ```
 SkillCraftAI/
-├── public/              # Static assets
-├── src/
-│   ├── assets/          # Images and SVG assets
-│   ├── components/      # Modular UI components (coding, interview, layout, common)
-│   ├── context/         # React Context providers (Auth, Toast, etc.)
-│   ├── data/            # Mock questions, analytics, and interview datasets
-│   ├── pages/           # Platform pages (Dashboard, VoiceInterview, CodingSandbox, etc.)
-│   ├── services/        # AI, speech, coding, and resume services
-│   ├── types/           # TypeScript type definitions
-│   ├── App.tsx          # Main routing & application entry
-│   └── main.tsx         # Root mounting point
-├── package.json
-└── vite.config.ts
+├── frontend/                 # React 19 + TypeScript + Vite SPA
+│   ├── src/
+│   │   ├── components/       # UI components (coding, interview, layout, common)
+│   │   ├── context/          # React Context (AuthContext with Supabase Auth)
+│   │   ├── lib/              # API & Supabase Client (apiClient.ts, supabase.ts)
+│   │   ├── pages/            # Platform pages (Dashboard, Voice, Coding, Resume)
+│   │   └── services/         # Service layers connected to FastAPI backend
+│   ├── .env.example          # Frontend environment variables template
+│   ├── .env                  # Frontend active environment variables
+│   ├── package.json
+│   └── vite.config.ts
+│
+├── backend/                  # FastAPI + Python 3.12 Backend
+│   ├── app/
+│   │   ├── core/             # Configuration & Supabase JWT Auth middleware
+│   │   ├── models/           # Pydantic schemas (Interview, Coding, Resume, User)
+│   │   ├── services/         # Supabase, Microsoft Foundry, Azure Search RAG, Azure Speech
+│   │   ├── routers/          # API endpoints (/auth, /interview, /coding, /resume, /voice)
+│   │   └── main.py           # FastAPI entrypoint & CORS middleware
+│   ├── supabase/
+│   │   └── schema.sql        # Supabase PostgreSQL schema, RLS policies, & storage bucket
+│   ├── tests/
+│   │   └── test_api.py       # Automated API test suite
+│   ├── .env.example          # Backend environment variables template
+│   ├── .env                  # Backend active environment variables
+│   └── requirements.txt
+│
+└── README.md
 ```
+
+---
+
+## 🚦 Quick Start
+
+### 1. Backend Setup (FastAPI)
+
+```bash
+cd backend
+
+# Create and activate virtual environment
+python -m venv .venv
+.venv\Scripts\Activate.ps1    # On Windows
+# source .venv/bin/activate   # On macOS/Linux
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Start backend server (Port 8000)
+uvicorn app.main:app --reload --port 8000
+```
+- API Docs (Swagger UI): [http://localhost:8000/docs](http://localhost:8000/docs)
+- Health Check: [http://localhost:8000/health](http://localhost:8000/health)
+
+### 2. Frontend Setup (React + Vite)
+
+```bash
+cd frontend
+
+# Install dependencies
+npm install
+
+# Start frontend development server (Port 5173)
+npm run dev
+```
+Open [http://localhost:5173](http://localhost:5173) in your browser.
+
+---
+
+## 🔑 Environment Variables
+
+Both `frontend/.env` and `backend/.env` have been created with clean placeholders ready for your credentials:
+- **Supabase**: URL, Anon Key, Service Role Key, JWT Secret (tables can be initialized with `backend/supabase/schema.sql`).
+- **Microsoft Foundry**: Azure Foundry endpoint, API key, project connection string.
+- **Azure AI Search**: Search service endpoint, admin key, index name.
+- **Azure AI Speech**: Speech resource key and region.
+
+*Note: The platform features robust local emulation fallbacks so you can run, develop, and test everything locally even before entering cloud credentials.*
 
 ---
 

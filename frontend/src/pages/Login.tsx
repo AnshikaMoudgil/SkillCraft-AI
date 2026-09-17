@@ -30,7 +30,7 @@ export const Login: React.FC = () => {
   const { showToast } = useToast();
   const navigate = useNavigate();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
 
@@ -41,12 +41,12 @@ export const Login: React.FC = () => {
 
     setIsLoading(true);
 
-    setTimeout(() => {
+    try {
       let success = false;
       if (isLoginTab) {
-        success = login(email, password, name);
+        success = await login(email, password, name);
       } else {
-        success = signup(name, email, password);
+        success = await signup(name, email, password);
       }
 
       setIsLoading(false);
@@ -57,11 +57,14 @@ export const Login: React.FC = () => {
       } else {
         setError('Authentication failed. Please check your details.');
       }
-    }, 600);
+    } catch {
+      setIsLoading(false);
+      setError('An error occurred during authentication.');
+    }
   };
 
-  const handleOAuth = (provider: string) => {
-    login(email, 'oauth_pass', name);
+  const handleOAuth = async (provider: string) => {
+    await login(email, 'oauth_pass', name);
     showToast(`Signed in with ${provider}`, 'success');
     navigate('/dashboard');
   };
