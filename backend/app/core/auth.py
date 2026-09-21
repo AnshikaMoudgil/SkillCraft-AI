@@ -38,8 +38,8 @@ async def get_current_user(authorization: Optional[str] = Header(None)) -> Dict[
             detail="Invalid authorization header format",
         )
 
-    # If Supabase JWT Secret is configured, decode and verify the JWT
-    if settings.SUPABASE_JWT_SECRET:
+    # If Supabase is fully configured, decode and verify the JWT
+    if settings.is_supabase_configured and settings.SUPABASE_JWT_SECRET and "your-supabase" not in settings.SUPABASE_JWT_SECRET:
         try:
             payload = jwt.decode(
                 token,

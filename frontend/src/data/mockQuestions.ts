@@ -36,55 +36,22 @@ You can return the answer in any order.`,
     starterCode: {
       Java: `class Solution {
     public int[] twoSum(int[] nums, int target) {
-        // AI Coding Coach: Use a Map for O(n) lookup!
-        Map<Integer, Integer> map = new HashMap<>();
-        for (int i = 0; i < nums.length; i++) {
-            int complement = target - nums[i];
-            if (map.containsKey(complement)) {
-                return new int[] { map.get(complement), i };
-            }
-            map.put(nums[i], i);
-        }
-        return new int[]{};
+        
     }
 }`,
       'C++': `#include <vector>
-#include <unordered_map>
 
 class Solution {
 public:
     std::vector<int> twoSum(std::vector<int>& nums, int target) {
-        // AI Coding Coach: Use an unordered_map for O(n) average lookup!
-        std::unordered_map<int, int> map;
-        for (int i = 0; i < nums.size(); i++) {
-            int complement = target - nums[i];
-            if (map.find(complement) != map.end()) {
-                return {map[complement], i};
-            }
-            map[nums[i]] = i;
-        }
-        return {};
+        
     }
 };`,
       Python: `class Solution:
     def twoSum(self, nums: list[int], target: int) -> list[int]:
-        seen = {}
-        for i, num in enumerate(nums):
-            complement = target - num
-            if complement in seen:
-                return [seen[complement], i]
-            seen[num] = i
-        return []`,
+        pass`,
       JavaScript: `function twoSum(nums, target) {
-    const map = new Map();
-    for (let i = 0; i < nums.length; i++) {
-        const complement = target - nums[i];
-        if (map.has(complement)) {
-            return [map.get(complement), i];
-        }
-        map.set(nums[i], i);
-    }
-    return [];
+    
 }`
     },
     testCases: [
@@ -128,56 +95,22 @@ An input string is valid if:
     starterCode: {
       Java: `class Solution {
     public boolean isValid(String s) {
-        Stack<Character> stack = new Stack<>();
-        for (char c : s.toCharArray()) {
-            if (c == '(') stack.push(')');
-            else if (c == '{') stack.push('}');
-            else if (c == '[') stack.push(']');
-            else if (stack.isEmpty() || stack.pop() != c) return false;
-        }
-        return stack.isEmpty();
+        
     }
 }`,
       'C++': `#include <string>
-#include <stack>
 
 class Solution {
 public:
     bool isValid(std::string s) {
-        std::stack<char> stack;
-        for (char c : s) {
-            if (c == '(') stack.push(')');
-            else if (c == '{') stack.push('}');
-            else if (c == '[') stack.push(']');
-            else if (stack.empty() || stack.top() != c) return false;
-            else stack.pop();
-        }
-        return stack.empty();
+        
     }
 };`,
       Python: `class Solution:
     def isValid(self, s: str) -> bool:
-        stack = []
-        mapping = {")": "(", "}": "{", "]": "["}
-        for char in s:
-            if char in mapping:
-                top = stack.pop() if stack else '#'
-                if mapping[char] != top:
-                    return False
-            else:
-                stack.append(char)
-        return not stack`,
+        pass`,
       JavaScript: `function isValid(s) {
-    const stack = [];
-    const map = { ')': '(', '}': '{', ']': '[' };
-    for (let char of s) {
-        if (map[char]) {
-            if (stack.pop() !== map[char]) return false;
-        } else {
-            stack.push(char);
-        }
-    }
-    return stack.length === 0;
+    
 }`
     },
     testCases: [

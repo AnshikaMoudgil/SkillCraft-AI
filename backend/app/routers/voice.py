@@ -1,10 +1,23 @@
-from fastapi import APIRouter, Depends, Response, HTTPException
+from fastapi import APIRouter, Depends, Response, HTTPException, UploadFile, File
 from typing import Dict, Any
 from pydantic import BaseModel
 from app.core.auth import get_current_user
 from app.services.speech_service import speech_service
 
 router = APIRouter(prefix="/voice", tags=["Azure AI Speech"])
+
+@router.post("/recognize")
+async def recognize_speech(
+    audio: UploadFile = File(...),
+    current_user: Dict[str, Any] = Depends(get_current_user)
+):
+    """
+    Receives an audio file from the frontend, uses Azure Speech SDK to transcribe it,
+    and returns the recognized text.
+    """
+    audio_bytes = await audio.read()
+    text = await speech_service.recognize_speech_from_audio(audio_bytes)
+    return {"text": text}
 
 class SynthesizeSpeechRequest(BaseModel):
     text: str

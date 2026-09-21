@@ -1,20 +1,22 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { PageContainer } from '../components/layout/PageContainer';
 import { ProblemView } from '../components/coding/ProblemView';
 import { CodeEditorArea } from '../components/coding/CodeEditorArea';
 import { AiCodingCoachPanel, AiCoachActionState } from '../components/coding/AiCodingCoachPanel';
 import { TestResultsPanel } from '../components/coding/TestResultsPanel';
-import { mockCodingProblems } from '../data/mockQuestions';
 import { codingService, TestRunResult } from '../services/codingService';
 import { aiService } from '../services/aiService';
 import { useToast } from '../context/ToastContext';
+import { apiClient } from '../lib/apiClient';
+import { CodingProblem } from '../types';
 
 export const CodingSandbox: React.FC = () => {
+  const [problems, setProblems] = useState<CodingProblem[]>([]);
   const [problemIndex, setProblemIndex] = useState(0);
-  const currentProblem = mockCodingProblems[problemIndex];
+  const [loading, setLoading] = useState(true);
 
   const [language, setLanguage] = useState('Java');
-  const [code, setCode] = useState(currentProblem.starterCode[language] || currentProblem.starterCode['Java']);
+  const [code, setCode] = useState('');
   const [testResults, setTestResults] = useState<TestRunResult | null>(null);
   const [isRunning, setIsRunning] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -27,15 +29,35 @@ export const CodingSandbox: React.FC = () => {
 
   const { showToast } = useToast();
 
+  useEffect(() => {
+    const fetchProblems = async () => {
+      try {
+        const data = await apiClient.get<CodingProblem[]>('/coding/problems');
+        if (data && data.length > 0) {
+          setProblems(data);
+          setCode(data[0].starterCode['Java'] || '');
+        }
+      } catch (err) {
+        showToast('Failed to load coding problems', 'error');
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchProblems();
+  }, [showToast]);
+
+  const currentProblem = problems[problemIndex];
+
   const handleLanguageChange = (newLang: string) => {
     setLanguage(newLang);
-    setCode(currentProblem.starterCode[newLang] || '');
+    setCode(currentProblem?.starterCode[newLang] || '');
   };
 
   const handleNextProblem = () => {
-    const nextIdx = (problemIndex + 1) % mockCodingProblems.length;
+    if (problems.length === 0) return;
+    const nextIdx = (problemIndex + 1) % problems.length;
     setProblemIndex(nextIdx);
-    const nextProb = mockCodingProblems[nextIdx];
+    const nextProb = problems[nextIdx];
     setCode(nextProb.starterCode[language] || nextProb.starterCode['Java']);
     setTestResults(null);
     setAiCoachState({ type: null, content: null, isLoading: false });
@@ -43,7 +65,7 @@ export const CodingSandbox: React.FC = () => {
   };
 
   const handleReset = () => {
-    setCode(currentProblem.starterCode[language] || '');
+    setCode(currentProblem?.starterCode[language] || '');
     showToast('Code reset to default starter template', 'info');
   };
 
@@ -52,7 +74,13 @@ export const CodingSandbox: React.FC = () => {
     try {
       const res = await codingService.runCode(language, code, currentProblem.title);
       setTestResults(res);
-      showToast('All 3 test cases passed!', 'success');
+      if (res.compileError || res.runtimeError) {
+        showToast('Execution error', 'error');
+      } else if (res.passed) {
+        showToast(`Passed ${res.passedTests}/${res.totalTests} tests`, 'success');
+      } else {
+        showToast(`Failed: ${res.passedTests}/${res.totalTests} tests passed`, 'error');
+      }
     } catch (e) {
       showToast('Error executing test cases', 'error');
     } finally {
@@ -65,7 +93,13 @@ export const CodingSandbox: React.FC = () => {
     try {
       const res = await codingService.submitCode(language, code, currentProblem.title);
       setTestResults(res);
-      showToast(`Solution accepted! Faster than ${res.percentileScore}% of submissions.`, 'success');
+      if (res.compileError || res.runtimeError) {
+        showToast('Execution error', 'error');
+      } else if (res.passed) {
+        showToast(`Solution accepted! Faster than ${res.percentileScore || 85}% of submissions.`, 'success');
+      } else {
+        showToast(`Wrong Answer: ${res.passedTests}/${res.totalTests} tests passed`, 'error');
+      }
     } catch (e) {
       showToast('Submission error', 'error');
     } finally {
@@ -90,15 +124,6 @@ export const CodingSandbox: React.FC = () => {
     });
   };
 
-  const handleReviewCode = async () => {
-    setAiCoachState({ type: 'review', content: null, isLoading: true });
-    const review = await aiService.reviewCode(currentProblem.title, code);
-    setAiCoachState({
-      type: 'review',
-      content: `Summary: ${review.summary}\n\n• Style: ${review.style}\n• Efficiency: ${review.efficiency}\n• Cleanliness: ${review.cleanliness}`,
-      isLoading: false
-    });
-  };
 
   const handleAnalyzeComplexity = async () => {
     setAiCoachState({ type: 'complexity', content: null, isLoading: true });
@@ -110,9 +135,25 @@ export const CodingSandbox: React.FC = () => {
     });
   };
 
+  if (loading) {
+    return (
+      <PageContainer title="Coding Sandbox" isFullWidth>
+        <div className="flex justify-center items-center h-64 text-slate-500 animate-pulse">Loading coding problems...</div>
+      </PageContainer>
+    );
+  }
+
+  if (!currentProblem) {
+    return (
+      <PageContainer title="Coding Sandbox" isFullWidth>
+        <div className="flex justify-center items-center h-64 text-slate-500">No problems available.</div>
+      </PageContainer>
+    );
+  }
+
   return (
     <PageContainer
-      title="Technical Coding Sandbox"
+      title="Coding Sandbox"
       subtitle={`${currentProblem.title} (${currentProblem.difficulty})`}
     >
       <div className="space-y-6 pb-12">

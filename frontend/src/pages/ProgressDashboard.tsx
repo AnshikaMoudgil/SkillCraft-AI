@@ -1,13 +1,9 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { PageContainer } from '../components/layout/PageContainer';
 import { Card } from '../components/common/Card';
 import { StatCard } from '../components/dashboard/StatCard';
 import { Button } from '../components/common/Button';
-import {
-  mockPerformanceTrend,
-  mockSkillBreakdownChart,
-  mockProgressStats
-} from '../data/mockAnalytics';
+import { apiClient } from '../lib/apiClient';
 import {
   ResponsiveContainer,
   LineChart,
@@ -27,6 +23,35 @@ import { useToast } from '../context/ToastContext';
 export const ProgressDashboard: React.FC = () => {
   const navigate = useNavigate();
   const { showToast } = useToast();
+  
+  const [analytics, setAnalytics] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchAnalytics = async () => {
+      try {
+        const data = await apiClient.get<any>('/interview/analytics');
+        if (data) setAnalytics(data);
+      } catch (err) {
+        showToast('Failed to load analytics', 'error');
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchAnalytics();
+  }, [showToast]);
+
+  if (loading) {
+    return (
+      <PageContainer title="Your Progress">
+        <div className="flex items-center justify-center h-48 text-slate-500 animate-pulse">Loading analytics...</div>
+      </PageContainer>
+    );
+  }
+
+  const { progressStats, skillBreakdownChart = [], performanceTrend = [] } = analytics || {
+    progressStats: { overallScore: 0, scoreImprovement: 0, interviewsCompleted: 0, learningStreak: 0, aiInsight: '' }
+  };
 
   return (
     <PageContainer
@@ -38,18 +63,18 @@ export const ProgressDashboard: React.FC = () => {
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
           <StatCard
             title="Overall Score"
-            value={`${mockProgressStats.overallScore}%`}
-            changeBadge={`+${mockProgressStats.scoreImprovement}%`}
+            value={`${progressStats.overallScore}%`}
+            changeBadge={`+${progressStats.scoreImprovement}%`}
             type="score"
           />
           <StatCard
             title="Interviews Completed"
-            value={mockProgressStats.interviewsCompleted}
+            value={progressStats.interviewsCompleted}
             type="interviews"
           />
           <StatCard
             title="Learning Streak"
-            value={`${mockProgressStats.learningStreak} days`}
+            value={`${progressStats.learningStreak} days`}
             type="streak"
           />
         </div>
@@ -68,7 +93,7 @@ export const ProgressDashboard: React.FC = () => {
             <div className="h-64 w-full">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart
-                  data={mockSkillBreakdownChart}
+                  data={analytics.skillBreakdown || []}
                   layout="vertical"
                   margin={{ top: 5, right: 30, left: 40, bottom: 5 }}
                 >
@@ -93,7 +118,7 @@ export const ProgressDashboard: React.FC = () => {
                     }}
                   />
                   <Bar dataKey="score" radius={[0, 6, 6, 0]}>
-                    {mockSkillBreakdownChart.map((entry, index) => (
+                    {(analytics.skillBreakdown || []).map((entry: any, index: number) => (
                       <Cell key={`cell-${index}`} fill={entry.fill} />
                     ))}
                   </Bar>
@@ -116,8 +141,8 @@ export const ProgressDashboard: React.FC = () => {
             <div className="h-64 w-full">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart
-                  data={mockPerformanceTrend}
-                  margin={{ top: 10, right: 20, left: 0, bottom: 5 }}
+                  data={analytics.performanceTrend || []}
+                  margin={{ top: 5, right: 20, left: 0, bottom: 5 }}
                 >
                   <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" />
                   <XAxis dataKey="name" stroke="#94A3B8" fontSize={11} />
@@ -156,8 +181,8 @@ export const ProgressDashboard: React.FC = () => {
               <h4 className="text-xs font-bold uppercase tracking-wider text-indigo-700">
                 AI Insight & Pattern Recognition
               </h4>
-              <p className="text-xs sm:text-sm text-slate-800 font-medium mt-1 leading-relaxed max-w-2xl">
-                {mockProgressStats.aiInsight}
+              <p className="text-sm text-slate-700 leading-relaxed">
+                {progressStats.aiInsight}
               </p>
             </div>
           </div>

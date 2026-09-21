@@ -1,8 +1,18 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { UserProfile } from '../types';
-import { mockUser } from '../data/mockUser';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { apiClient } from '../lib/apiClient';
+
+const defaultUser: UserProfile = {
+  name: 'User',
+  role: 'Candidate',
+  email: '',
+  interviewsCompleted: 0,
+  overallScore: 0,
+  scoreChange: 0,
+  codingStreak: 0,
+  skills: []
+};
 
 interface AuthContextType {
   user: UserProfile;
@@ -25,12 +35,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const saved = localStorage.getItem(USER_STORAGE_KEY);
       if (saved) {
         const parsed = JSON.parse(saved);
-        return { ...mockUser, ...parsed };
+        return { ...defaultUser, ...parsed };
       }
     } catch {
       // ignore
     }
-    return mockUser;
+    return defaultUser;
   });
 
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {

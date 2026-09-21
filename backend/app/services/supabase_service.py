@@ -107,6 +107,17 @@ class SupabaseService:
         self._mock_interviews[session_id] = session_data
         return session_data
 
+    async def get_interview(self, session_id: str) -> Dict[str, Any]:
+        if self._client:
+            try:
+                res = self._client.table("interviews").select("*").eq("id", session_id).single().execute()
+                if res.data:
+                    return res.data
+            except Exception as e:
+                print(f"[SupabaseService] get_interview error: {e}")
+
+        return self._mock_interviews.get(session_id, {})
+
     async def append_transcript(self, interview_id: str, turn: Dict[str, Any]) -> Dict[str, Any]:
         turn_id = str(uuid.uuid4())
         turn["id"] = turn_id
@@ -125,6 +136,18 @@ class SupabaseService:
         self._mock_transcripts[interview_id].append(turn)
         return turn
 
+    async def get_transcripts(self, session_id: str) -> List[Dict[str, Any]]:
+        if self._client:
+            try:
+                res = self._client.table("interview_transcripts").select("*").eq("interview_id", session_id).order("created_at").execute()
+                if res.data:
+                    return res.data
+                return []
+            except Exception as e:
+                print(f"[SupabaseService] get_transcripts error: {e}")
+
+        return self._mock_transcripts.get(session_id, [])
+
     async def update_interview_evaluation(self, session_id: str, eval_data: Dict[str, Any]) -> Dict[str, Any]:
         if self._client:
             try:
@@ -138,5 +161,39 @@ class SupabaseService:
             self._mock_interviews[session_id].update(eval_data)
             return self._mock_interviews[session_id]
         return eval_data
+
+    async def save_coding_submission(self, user_id: str, submission_data: Dict[str, Any]) -> Dict[str, Any]:
+        submission_id = str(uuid.uuid4())
+        submission_data["id"] = submission_id
+        submission_data["user_id"] = user_id
+
+        if self._client:
+            try:
+                res = self._client.table("coding_submissions").insert(submission_data).execute()
+                if res.data:
+                    return res.data[0]
+            except Exception as e:
+                print(f"[SupabaseService] save_coding_submission error: {e}")
+
+        # In-memory fallback
+        if not hasattr(self, '_mock_submissions'):
+            self._mock_submissions = {}
+        self._mock_submissions[submission_id] = submission_data
+        return submission_data
+
+    async def get_recent_interviews(self, user_id: str, limit: int = 5) -> List[Dict[str, Any]]:
+        if self._client:
+            try:
+                res = self._client.table("interviews").select("*").eq("user_id", user_id).order("created_at", desc=True).limit(limit).execute()
+                if res.data:
+                    return res.data
+                return []
+            except Exception as e:
+                print(f"[SupabaseService] get_recent_interviews error: {e}")
+
+        # In-memory fallback
+        interviews = [v for v in self._mock_interviews.values() if v.get("user_id") == user_id]
+        # sort by created_at missing, but fallback shouldn't happen much
+        return interviews[:limit]
 
 supabase_service = SupabaseService()

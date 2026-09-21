@@ -3,10 +3,9 @@ import { PageContainer } from '../components/layout/PageContainer';
 import { Card } from '../components/common/Card';
 import { Button } from '../components/common/Button';
 import { Badge } from '../components/common/Badge';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useToast } from '../context/ToastContext';
-import { interviewService } from '../services/interviewService';
-import { mockDefaultInterviewPlan } from '../data/mockInterviews';
+import { interviewService, SetupConfig } from '../services/interviewService';
 import { InterviewPlanItem } from '../types';
 import {
   Sparkles,
@@ -29,12 +28,16 @@ export const InterviewSetup: React.FC = () => {
   const [focusAreas, setFocusAreas] = useState<string[]>(['DSA', 'Java', 'DBMS', 'System Design']);
   const [duration, setDuration] = useState<number>(30);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [plan, setPlan] = useState<InterviewPlanItem[]>(mockDefaultInterviewPlan);
+  const [plan, setPlan] = useState<any>(null);
   const [customTopicInput, setCustomTopicInput] = useState('');
   const [showAddCustom, setShowAddCustom] = useState(false);
 
   const navigate = useNavigate();
+  const location = useLocation();
   const { showToast } = useToast();
+
+  const interviewType = location.state?.type || 'technical';
+  const interviewTitle = location.state?.title || 'Mock Interview';
 
   const allTopics = ['DSA', 'Java', 'DBMS', 'System Design', 'Behavioral', 'Projects', 'Machine Learning', 'Cloud & Docker'];
 
@@ -58,12 +61,16 @@ export const InterviewSetup: React.FC = () => {
   const handleGeneratePlan = async () => {
     setIsGenerating(true);
     try {
-      const generated = await interviewService.generateInterviewPlan({
+      const config: SetupConfig = {
+        title: interviewTitle,
+        type: interviewType,
         role,
         difficulty,
         focusAreas,
-        durationMinutes: duration
-      });
+        durationMinutes: duration,
+        number_of_questions: duration === 15 ? 3 : duration === 30 ? 5 : duration === 45 ? 7 : 9
+      };
+      const generated = await interviewService.generateInterviewPlan(config);
       setPlan(generated);
       showToast('AI synthesized your tailored 9-step interview plan!', 'success');
     } catch (e) {
@@ -234,37 +241,47 @@ export const InterviewSetup: React.FC = () => {
                 </span>
               </div>
 
-              {/* 9-step plan list matching reference */}
-              <div className="divide-y divide-slate-100 py-2">
-                {plan.map((item) => (
-                  <div
-                    key={item.step}
-                    className="py-2.5 flex items-start gap-3 text-xs group hover:bg-slate-50/80 px-2 rounded-lg transition-colors"
-                  >
-                    <span className="w-5 h-5 rounded-full bg-slate-100 text-slate-600 font-bold flex items-center justify-center shrink-0 text-[10px] group-hover:bg-indigo-600 group-hover:text-white transition-colors">
-                      {item.step}
-                    </span>
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center justify-between gap-2">
-                        <p className="font-bold text-slate-800 truncate">{item.title}</p>
-                        <span className="text-[10px] text-slate-400 font-medium shrink-0">
-                          {item.estimatedMinutes}m
-                        </span>
-                      </div>
-                      <p className="text-[11px] text-slate-400 mt-0.5 truncate">
-                        {item.description}
-                      </p>
+              {/* Dynamic Plan Rendering */}
+              {plan ? (
+                <div className="py-2 space-y-4">
+                  <p className="text-xs text-slate-600 font-medium">{plan.interview_goal}</p>
+                  
+                  <div>
+                    <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Category Breakdown</h4>
+                    <div className="space-y-2">
+                      {plan.categories?.map((cat: any, idx: number) => (
+                        <div key={idx} className="flex items-center justify-between bg-slate-50 border border-slate-100 rounded-lg p-2 text-xs">
+                          <span className="font-semibold text-slate-700">{cat.name}</span>
+                          <span className="text-[10px] bg-white px-2 py-0.5 rounded border border-slate-200">{cat.count} Questions</span>
+                        </div>
+                      ))}
                     </div>
                   </div>
-                ))}
-              </div>
 
-              <div className="p-3 rounded-xl bg-indigo-50/70 border border-indigo-100 text-[11px] text-indigo-900 mt-2 flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-indigo-600 shrink-0" />
-                <span>
-                  This plan is customized based on your resume and skill profile.
-                </span>
-              </div>
+                  <div>
+                    <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Adaptive Strategy</h4>
+                    <ul className="text-[11px] text-slate-600 space-y-1 pl-4 list-disc marker:text-indigo-400">
+                      {plan.adaptive_strategy?.map((strategy: string, idx: number) => (
+                        <li key={idx}>{strategy}</li>
+                      ))}
+                    </ul>
+                  </div>
+
+                  <div className="p-3 rounded-xl bg-indigo-50/70 border border-indigo-100 text-[11px] text-indigo-900 mt-2 flex flex-col gap-1">
+                    <div className="flex items-center gap-2">
+                      <Sparkles className="w-4 h-4 text-indigo-600 shrink-0" />
+                      <span className="font-bold">Plan successfully generated.</span>
+                    </div>
+                    <span className="text-[10px] opacity-80">This plan is fully tailored based on your configuration.</span>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex-1 flex flex-col items-center justify-center text-center p-6 bg-slate-50/50 rounded-xl border border-dashed border-slate-200 mt-2 h-64">
+                  <Bot className="w-10 h-10 text-slate-300 mb-3" />
+                  <p className="text-sm font-bold text-slate-600 mb-1">No Plan Generated</p>
+                  <p className="text-xs text-slate-400">Click the button on the left to synthesize a custom strategy using Microsoft Foundry Agent.</p>
+                </div>
+              )}
             </div>
 
             {/* Launch Practice Options */}
@@ -276,7 +293,19 @@ export const InterviewSetup: React.FC = () => {
                 <Button
                   variant="primary"
                   size="md"
-                  onClick={() => navigate('/interview/live')}
+                  onClick={() => navigate('/interview/live', { 
+                    state: { 
+                      config: {
+                        title: interviewTitle,
+                        type: interviewType,
+                        role,
+                        difficulty,
+                        focusAreas,
+                        durationMinutes: duration,
+                        number_of_questions: duration === 15 ? 3 : duration === 30 ? 5 : duration === 45 ? 7 : 9
+                      }
+                    } 
+                  })}
                   icon={<Video className="w-4 h-4" />}
                   className="w-full text-xs font-bold"
                 >
@@ -285,9 +314,23 @@ export const InterviewSetup: React.FC = () => {
                 <Button
                   variant="outline"
                   size="md"
-                  onClick={() => navigate('/interview/voice')}
+                  onClick={() => navigate('/interview/voice', { 
+                    state: { 
+                      config: {
+                        title: interviewTitle,
+                        type: interviewType,
+                        role,
+                        difficulty,
+                        focusAreas,
+                        durationMinutes: duration,
+                        number_of_questions: duration === 15 ? 3 : duration === 30 ? 5 : duration === 45 ? 7 : 9,
+                        generated_plan: plan
+                      }
+                    } 
+                  })}
                   icon={<Mic className="w-4 h-4 text-purple-600" />}
                   className="w-full text-xs font-bold"
+                  disabled={!plan}
                 >
                   Voice Session
                 </Button>

@@ -37,25 +37,44 @@ export const speechService = {
     }
   },
 
-  startRecording(): void {
-    // In future with Azure Speech SDK:
-    // const speechConfig = SpeechConfig.fromAuthorizationToken(token, region);
-    // const recognizer = new SpeechRecognizer(speechConfig, audioConfig);
-  },
-
-  stopRecording(): void {
-    // In future: recognizer.stopContinuousRecognitionAsync();
+  async recognizeAudio(audioBlob: Blob): Promise<string> {
+    try {
+      const formData = new FormData();
+      formData.append('audio', audioBlob, 'recording.wav');
+      const response = await apiClient.upload<{ text: string }>('/voice/recognize', formData);
+      return response.text;
+    } catch (e) {
+      console.warn('[speechService] Audio recognition failed:', e);
+      return '';
+    }
   },
 
   /**
    * Synthesize text to speech using Azure Neural Voice or browser Web Speech fallback
    */
   async synthesizeSpeech(text: string): Promise<boolean> {
+    console.log("[VoiceDebug] TTS CALL");
+    console.log(`[VoiceDebug] TTS text: ${text}`);
+    console.log("[VoiceDebug] TTS caller/location: speechService.synthesizeSpeech");
     // 1. Try Azure Speech backend neural synthesis endpoint
     try {
+      // Get auth headers from Supabase session using the exported getAuthHeaders (or manually)
+      const { supabase } = await import('../lib/supabase');
+      let tokenStr = '';
+      if (supabase) {
+        const { data } = await supabase.auth.getSession();
+        if (data?.session?.access_token) tokenStr = `Bearer ${data.session.access_token}`;
+      }
+      if (!tokenStr && localStorage.getItem('skillcraft_is_authenticated') === 'true') {
+        tokenStr = 'Bearer mock-demo-token';
+      }
+
       const response = await fetch(`${apiClient.baseUrl}/voice/synthesize`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          ...(tokenStr ? { 'Authorization': tokenStr } : {})
+        },
         body: JSON.stringify({ text }),
       });
 

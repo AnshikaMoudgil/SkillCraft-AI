@@ -1,5 +1,8 @@
 from typing import Dict, Any, Optional
 import httpx
+import tempfile
+import os
+import azure.cognitiveservices.speech as speechsdk
 from app.core.config import settings
 
 class SpeechService:
@@ -76,5 +79,46 @@ class SpeechService:
                 print(f"[SpeechService] Audio synthesis error: {e}")
 
         return None
+
+    async def recognize_speech_from_audio(self, audio_bytes: bytes) -> str:
+        """
+        Transcribes speech from an audio file using Azure Speech SDK.
+        """
+        if not settings.is_speech_configured:
+            return "Speech recognition is not configured."
+
+        try:
+            # Use ANY container format to let Azure handle browser WebM/OGG compressions natively
+            stream_format = speechsdk.audio.AudioStreamFormat(compressed_stream_format=speechsdk.audio.AudioStreamContainerFormat.ANY)
+            push_stream = speechsdk.audio.PushAudioInputStream(stream_format=stream_format)
+            push_stream.write(audio_bytes)
+            push_stream.close()
+
+            speech_config = speechsdk.SpeechConfig(
+                subscription=settings.AZURE_SPEECH_KEY, 
+                region=settings.AZURE_SPEECH_REGION
+            )
+            audio_config = speechsdk.audio.AudioConfig(stream=push_stream)
+            speech_recognizer = speechsdk.SpeechRecognizer(
+                speech_config=speech_config, 
+                audio_config=audio_config
+            )
+
+            # Perform recognition
+            result = speech_recognizer.recognize_once_async().get()
+            
+            if result.reason == speechsdk.ResultReason.RecognizedSpeech:
+                return result.text
+            elif result.reason == speechsdk.ResultReason.NoMatch:
+                print("[SpeechService] Speech Recognition returned NoMatch (possibly silent or unsupported audio).")
+                return ""
+            elif result.reason == speechsdk.ResultReason.Canceled:
+                cancellation_details = result.cancellation_details
+                print(f"[SpeechService] Speech Recognition canceled: {cancellation_details.reason}")
+                return ""
+        except Exception as e:
+            print(f"[SpeechService] Exception during speech recognition: {e}")
+        
+        return ""
 
 speech_service = SpeechService()

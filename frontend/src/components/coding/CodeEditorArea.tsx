@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { Play, Send, Copy, Check, RotateCcw } from 'lucide-react';
 import { Button } from '../common/Button';
 
@@ -31,6 +31,24 @@ export const CodeEditorArea: React.FC<CodeEditorAreaProps> = ({
     navigator.clipboard.writeText(code);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const overlayRef = useRef<HTMLDivElement>(null);
+  
+  const handleScroll = (e: React.UIEvent<HTMLTextAreaElement>) => {
+    if (overlayRef.current) {
+      overlayRef.current.scrollTop = e.currentTarget.scrollTop;
+      overlayRef.current.scrollLeft = e.currentTarget.scrollLeft;
+    }
+  };
+
+  const highlightCode = (text: string) => {
+    return text
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/\b(class|public|private|protected|static|void|int|boolean|string|char|float|double|return|if|else|for|while|new|const|let|var|function|def|self|import|from|#include|namespace|using|std|vector|unordered_map|map|set|stack|queue|bool|pass)\b/g, '<span class="text-pink-400">$1</span>')
+      .replace(/(\/\/.*|#.*)/g, '<span class="text-slate-400 italic">$1</span>');
   };
 
   const lines = code.split('\n');
@@ -104,19 +122,31 @@ export const CodeEditorArea: React.FC<CodeEditorAreaProps> = ({
       {/* Code Editor Box with Line Numbers */}
       <div className="flex-1 relative flex overflow-hidden font-mono text-xs sm:text-sm">
         {/* Line Numbers */}
-        <div className="w-12 py-3 px-2 bg-[#081527] text-slate-500 select-none text-right font-mono border-r border-slate-800 shrink-0 leading-6">
+        <div className="w-12 py-3 px-2 bg-[#081527] text-slate-500 select-none text-right font-mono border-r border-slate-800 shrink-0 leading-6 overflow-hidden">
           {lines.map((_, i) => (
             <div key={i}>{i + 1}</div>
           ))}
         </div>
 
-        {/* Textarea Code Input */}
-        <textarea
-          value={code}
-          onChange={(e) => onChange(e.target.value)}
-          spellCheck={false}
-          className="w-full h-full p-3 bg-transparent text-emerald-300 font-mono resize-none focus:outline-none leading-6 selection:bg-indigo-600/40 selection:text-white"
-        />
+        {/* Editor Container */}
+        <div className="flex-1 relative bg-[#0B192C]">
+          {/* Highlighted Code Overlay */}
+          <div 
+            ref={overlayRef}
+            className="absolute inset-0 p-3 pb-8 font-mono leading-6 whitespace-pre overflow-hidden text-slate-300 pointer-events-none"
+            dangerouslySetInnerHTML={{ __html: highlightCode(code) }}
+            aria-hidden="true"
+          />
+          
+          {/* Textarea Code Input */}
+          <textarea
+            value={code}
+            onChange={(e) => onChange(e.target.value)}
+            onScroll={handleScroll}
+            spellCheck={false}
+            className="absolute inset-0 w-full h-full p-3 pb-8 bg-transparent text-transparent caret-white font-mono resize-none focus:outline-none leading-6 whitespace-pre overflow-auto selection:bg-indigo-600/40 selection:text-transparent"
+          />
+        </div>
       </div>
     </div>
   );

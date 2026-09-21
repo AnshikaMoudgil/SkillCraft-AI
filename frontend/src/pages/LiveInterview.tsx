@@ -3,46 +3,75 @@ import { PageContainer } from '../components/layout/PageContainer';
 import { ChatBubble, AiTypingIndicator } from '../components/interview/ChatBubble';
 import { QuestionProgressBar } from '../components/interview/QuestionProgressBar';
 import { ChatMessage } from '../types';
-import { interviewService } from '../services/interviewService';
-import { useNavigate } from 'react-router-dom';
+import { interviewService, SetupConfig } from '../services/interviewService';
+import { speechService } from '../services/speechService';
+import * as speechsdk from 'microsoft-cognitiveservices-speech-sdk';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useToast } from '../context/ToastContext';
-import { Send, Mic, Sparkles, Volume2, Info } from 'lucide-react';
+import { Send, Mic, Sparkles, Volume2, Info, Loader2 } from 'lucide-react';
 
 export const LiveInterview: React.FC = () => {
-  const [messages, setMessages] = useState<ChatMessage[]>([
-    {
-      id: 'msg-1',
-      sender: 'ai',
-      text: 'Explain your approach to detecting a cycle in a linked list.',
-      timestamp: '05:30',
-      topic: 'Linked Lists'
-    },
-    {
-      id: 'msg-2',
-      sender: 'user',
-      text: "I would use Floyd's cycle detection algorithm with slow and fast pointers. The slow pointer moves one node while the fast pointer moves two nodes at each step.",
-      timestamp: '05:52',
-      topic: 'Linked Lists'
-    },
-    {
-      id: 'msg-3',
-      sender: 'ai',
-      text: "That's a good approach. What happens if the list has no cycle? How do we handle that case and ensure the algorithm terminates safely?",
-      timestamp: '06:15',
-      topic: 'Linked Lists'
-    }
-  ]);
+  const location = useLocation();
+  const config = (location.state?.config as SetupConfig) || {
+    title: 'Quick Live Interview',
+    type: 'technical',
+    role: 'Software Engineer',
+    difficulty: 'Intermediate',
+    focusAreas: ['React', 'TypeScript', 'General CS'],
+    durationMinutes: 15,
+    number_of_questions: 3
+  };
+  const navigate = useNavigate();
+  const { showToast } = useToast();
+
+  const [sessionId, setSessionId] = useState<string | null>(null);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [isInitializing, setIsInitializing] = useState(true);
 
   const [inputVal, setInputVal] = useState('');
   const [isAiTyping, setIsAiTyping] = useState(false);
-  const [questionCount, setQuestionCount] = useState(4);
-  const [currentTopic, setCurrentTopic] = useState('Linked Lists');
-  const [nextTopic, setNextTopic] = useState('DBMS');
-  const [timeRemaining, setTimeRemaining] = useState(1104); // 18:24 in seconds
+  const [questionCount, setQuestionCount] = useState(1);
+  const [currentTopic, setCurrentTopic] = useState('General');
+  const [nextTopic, setNextTopic] = useState('General');
+  const [timeRemaining, setTimeRemaining] = useState((config.durationMinutes || 30) * 60);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const navigate = useNavigate();
-  const { showToast } = useToast();
+  const recognizerRef = useRef<speechsdk.SpeechRecognizer | null>(null);
+  const [interimTranscript, setInterimTranscript] = useState('');
+  const [isRecordingSpeech, setIsRecordingSpeech] = useState(false);
+
+  // Initialize Interview
+  useEffect(() => {
+    let isMounted = true;
+    const start = async () => {
+      try {
+        const response = await interviewService.startInterview(config);
+        if (isMounted) {
+          setSessionId(response.sessionId);
+          setCurrentTopic(response.topic || 'General');
+          const now = new Date();
+          const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+          
+          setMessages([
+            {
+              id: `ai-${Date.now()}`,
+              sender: 'ai',
+              text: `${response.greeting} ${response.firstQuestion}`,
+              timestamp: timeStr,
+              topic: response.topic || 'General'
+            }
+          ]);
+          setIsInitializing(false);
+        }
+      } catch (err) {
+        showToast('Failed to initialize interview. Please try again.', 'error');
+        navigate(-1);
+      }
+    };
+    start();
+    
+    return () => { isMounted = false; };
+  }, [config, navigate, showToast]);
 
   // Scroll to bottom whenever messages update
   useEffect(() => {
@@ -51,21 +80,124 @@ export const LiveInterview: React.FC = () => {
 
   // Countdown timer
   useEffect(() => {
+    if (isInitializing) return;
     const timer = setInterval(() => {
       setTimeRemaining((prev) => (prev > 0 ? prev - 1 : 0));
     }, 1000);
     return () => clearInterval(timer);
-  }, []);
+  }, [isInitializing]);
+
+  const startMic = async () => {
+    try {
+      console.log("[Speech] Initializing");
+      const tokenRes = await speechService.getSpeechToken();
+      if (!tokenRes.token) {
+        throw new Error("Missing speech token");
+      }
+      console.log("[Speech] Token acquired");
+      
+      const speechConfig = speechsdk.SpeechConfig.fromAuthorizationToken(tokenRes.token, tokenRes.region);
+      speechConfig.speechRecognitionLanguage = "en-US";
+      
+      const audioConfig = speechsdk.AudioConfig.fromDefaultMicrophoneInput();
+      const recognizer = new speechsdk.SpeechRecognizer(speechConfig, audioConfig);
+      recognizerRef.current = recognizer;
+      
+      console.log("[Speech] Recognizer created");
+
+      recognizer.recognizing = (s, e) => {
+        console.log(`[Speech] Recognizing: ${e.result.text}`);
+        setInterimTranscript(e.result.text);
+      };
+
+      recognizer.recognized = (s, e) => {
+        if (e.result.reason === speechsdk.ResultReason.RecognizedSpeech && e.result.text) {
+          console.log(`[Speech] Recognized: ${e.result.text}`);
+          setInputVal(prev => (prev ? prev + ' ' : '') + e.result.text);
+          setInterimTranscript('');
+        }
+      };
+
+      recognizer.canceled = (s, e) => {
+        console.log(`[Speech] Canceled: ${e.errorDetails || e.reason}`);
+        if (e.reason === speechsdk.CancellationReason.Error) {
+          showToast(`Speech recognition error: ${e.errorDetails}`, "error");
+        }
+        stopMic();
+      };
+
+      recognizer.sessionStarted = (s, e) => {
+        console.log("[Speech] Session started");
+      };
+
+      recognizer.sessionStopped = (s, e) => {
+        console.log("[Speech] Session stopped");
+        stopMic();
+      };
+
+      recognizer.startContinuousRecognitionAsync(
+        () => {
+          console.log("[Speech] Listening started");
+          setIsRecordingSpeech(true);
+          showToast('Listening... Speak your answer.', 'info');
+        },
+        (err) => {
+          console.log(`[Speech] Start Error: ${err}`);
+          showToast("Failed to start speech recognition.", "error");
+          stopMic();
+        }
+      );
+
+    } catch (e) {
+      console.log("[Speech] Error initializing:", e);
+      showToast("Speech SDK initialization failure or Microphone denied.", "error");
+      stopMic();
+    }
+  };
+
+  const stopMic = () => {
+    const recognizer = recognizerRef.current;
+    if (recognizer) {
+      recognizer.stopContinuousRecognitionAsync(
+        () => {
+          console.log("[Speech] Listening stopped");
+          recognizer.close();
+          recognizerRef.current = null;
+          setIsRecordingSpeech(false);
+          setInterimTranscript('');
+        },
+        (err) => {
+          console.log(`[Speech] Stop Error: ${err}`);
+          recognizer.close();
+          recognizerRef.current = null;
+          setIsRecordingSpeech(false);
+          setInterimTranscript('');
+        }
+      );
+    } else {
+      setIsRecordingSpeech(false);
+      setInterimTranscript('');
+    }
+  };
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!inputVal.trim() || isAiTyping) return;
+
+    if (isRecordingSpeech) {
+      stopMic();
+    }
+
+    if (!inputVal.trim() || isAiTyping || !sessionId) return;
 
     const userText = inputVal;
     setInputVal('');
 
     const now = new Date();
     const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+
+    // The LAST AI message is the question we are answering
+    const lastMsg = messages[messages.length - 1];
+    const questionText = lastMsg?.sender === 'ai' ? lastMsg.text : "Previous Question";
 
     const userMsg: ChatMessage = {
       id: `usr-${Date.now()}`,
@@ -77,35 +209,63 @@ export const LiveInterview: React.FC = () => {
 
     setMessages((prev) => [...prev, userMsg]);
     setIsAiTyping(true);
+    console.log("[Interview] Answer submitted");
 
     try {
-      const nextData = await interviewService.getNextAdaptiveQuestion(questionCount, userText);
+      const response = await interviewService.respondToCandidate(sessionId, questionText, userText, currentTopic);
       setIsAiTyping(false);
+      console.log("[Interview] Backend response received");
 
       const aiMsg: ChatMessage = {
         id: `ai-${Date.now()}`,
         sender: 'ai',
-        text: nextData.question,
+        text: `${response.feedback} ${response.followUp}`,
         timestamp: timeStr,
-        topic: nextData.topic
+        topic: currentTopic // Keep current or let AI suggest next
       };
 
       setMessages((prev) => [...prev, aiMsg]);
-      setQuestionCount((c) => Math.min(9, c + 1));
-      if (nextData.topic !== currentTopic) {
-        setCurrentTopic(nextData.topic);
-        setNextTopic(nextData.topic === 'DBMS' ? 'System Design' : 'Behavioral');
-      }
+      setQuestionCount((c) => c + 1);
+
+      console.log("[Speech] TTS started");
+      console.log("[VoiceDebug] TTS CALL");
+      console.log(`[VoiceDebug] TTS text: ${aiMsg.text}`);
+      console.log("[VoiceDebug] TTS caller/location: LiveInterview handleSendMessage");
+      await speechService.synthesizeSpeech(aiMsg.text);
+      console.log("[Speech] TTS completed");
     } catch (e) {
       setIsAiTyping(false);
-      showToast('Error generating AI response', 'error');
+      showToast('Error generating AI response. Please try again.', 'error');
+      // Revert user message on failure so they can try again
+      setMessages((prev) => prev.slice(0, -1));
+      setInputVal(userText);
     }
   };
 
-  const handleFinish = () => {
-    showToast('Interview concluded! Generating full transcript & performance report.', 'success');
-    navigate('/interview/transcript');
+  const handleFinish = async () => {
+    if (!sessionId) return;
+    setIsAiTyping(true);
+    showToast('Interview concluded! Generating full transcript & performance report...', 'info');
+    
+    try {
+      await interviewService.evaluateInterview(sessionId, messages);
+      navigate(`/interview/report?session=${sessionId}`);
+    } catch (err) {
+      showToast('Error generating report. You can view it later in your dashboard.', 'error');
+      navigate('/dashboard');
+    }
   };
+
+  if (isInitializing) {
+    return (
+      <PageContainer title="Live Adaptive Interview" subtitle="Foundry Adaptive Agent Flow">
+        <div className="flex flex-col items-center justify-center h-[600px] space-y-4">
+          <Loader2 className="w-12 h-12 text-indigo-600 animate-spin" />
+          <p className="text-slate-600 font-medium">Connecting to Microsoft Foundry Agent...</p>
+        </div>
+      </PageContainer>
+    );
+  }
 
   return (
     <PageContainer
@@ -120,7 +280,7 @@ export const LiveInterview: React.FC = () => {
             <div className="flex items-center gap-2">
               <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
               <span className="text-xs font-bold text-slate-800">
-                Active Session: Technical & Behavioral Mock
+                Active Session: {config?.title || "Live Mock"}
               </span>
             </div>
             <span className="text-xs text-indigo-600 bg-indigo-50 font-semibold px-2.5 py-0.5 rounded-full border border-indigo-100">
@@ -142,21 +302,34 @@ export const LiveInterview: React.FC = () => {
             <form onSubmit={handleSendMessage} className="flex items-center gap-2">
               <button
                 type="button"
-                onClick={() => showToast('Speech-to-text listening...', 'info')}
-                className="p-3 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-2xl transition-colors"
-                title="Speak answer"
+                onClick={isRecordingSpeech ? stopMic : startMic}
+                className={`p-3 rounded-2xl transition-colors ${isRecordingSpeech ? 'bg-rose-100 text-rose-600 animate-pulse' : 'text-slate-400 hover:text-indigo-600 hover:bg-indigo-50'}`}
+                title={isRecordingSpeech ? "Stop Mic" : "Speak answer"}
+                disabled={isAiTyping}
               >
                 <Mic className="w-5 h-5" />
               </button>
 
-              <input
-                type="text"
-                value={inputVal}
-                onChange={(e) => setInputVal(e.target.value)}
-                placeholder="Type your response..."
-                disabled={isAiTyping}
-                className="flex-1 px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 transition-all"
-              />
+              <div className="flex-1 relative flex items-center">
+                <input
+                  type="text"
+                  value={inputVal}
+                  onChange={(e) => setInputVal(e.target.value)}
+                  placeholder={interimTranscript ? "" : "Type your response..."}
+                  disabled={isAiTyping}
+                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 transition-all z-10 bg-transparent"
+                />
+                {!inputVal && interimTranscript && (
+                  <div className="absolute left-4 pointer-events-none text-slate-400 text-sm italic z-0 opacity-70">
+                    {interimTranscript}
+                  </div>
+                )}
+                {inputVal && interimTranscript && (
+                  <div className="absolute left-0 -top-8 bg-indigo-50 border border-indigo-100 text-indigo-700 text-xs px-3 py-1.5 rounded-lg whitespace-nowrap shadow-sm opacity-80 pointer-events-none">
+                    {interimTranscript}
+                  </div>
+                )}
+              </div>
 
               <button
                 type="submit"
@@ -173,7 +346,7 @@ export const LiveInterview: React.FC = () => {
         <div className="lg:col-span-4 h-full flex flex-col justify-between space-y-4">
           <QuestionProgressBar
             currentQuestion={questionCount}
-            totalQuestions={9}
+            totalQuestions={config?.number_of_questions || 5}
             currentTopic={currentTopic}
             nextTopic={nextTopic}
             timeRemainingSeconds={timeRemaining}

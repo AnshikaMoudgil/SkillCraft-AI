@@ -3,8 +3,9 @@ import { PageContainer } from '../components/layout/PageContainer';
 import { Card } from '../components/common/Card';
 import { Button } from '../components/common/Button';
 import { Badge } from '../components/common/Badge';
-import { mockTranscriptConversation, mockCommunicationMetrics, mockFillerWords } from '../../src/data/mockInterviews';
-import { useNavigate } from 'react-router-dom';
+import { interviewService } from '../services/interviewService';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useToast } from '../context/ToastContext';
 import {
   FileText,
   Activity,
@@ -17,10 +18,40 @@ import {
   CheckCircle2,
   AlertTriangle
 } from 'lucide-react';
-
 export const TranscriptAnalysis: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'transcript' | 'analysis'>('transcript');
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const { showToast } = useToast();
+  
+  const [transcripts, setTranscripts] = React.useState<any[]>([]);
+  const [reportData, setReportData] = React.useState<any>(null);
+  const [isLoading, setIsLoading] = React.useState(true);
+  
+  const sessionId = searchParams.get('session');
+
+  React.useEffect(() => {
+    if (!sessionId) {
+      navigate('/dashboard');
+      return;
+    }
+    
+    const fetchData = async () => {
+      try {
+        const [tData, rData] = await Promise.all([
+          interviewService.getInterviewTranscripts(sessionId),
+          interviewService.getInterviewReport(sessionId)
+        ]);
+        setTranscripts(tData);
+        setReportData(rData);
+      } catch (e) {
+        showToast('Error loading transcripts', 'error');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchData();
+  }, [sessionId, navigate, showToast]);
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -33,9 +64,32 @@ export const TranscriptAnalysis: React.FC = () => {
     }
   };
 
+  if (isLoading) {
+    return (
+      <PageContainer title="Interview Transcript">
+        <div className="flex justify-center items-center h-64">Loading transcripts...</div>
+      </PageContainer>
+    );
+  }
+
+  const metrics = reportData?.communication_metrics || [];
+
+  const fillerWordsList = ["um", "uh", "like", "you know", "actually", "basically"];
+  const computedFillerWords = fillerWordsList.map(word => {
+    let count = 0;
+    transcripts.forEach(t => {
+      if (t.role === 'user') {
+        const regex = new RegExp(`\\b${word}\\b`, 'gi');
+        const matches = t.text.match(regex);
+        if (matches) count += matches.length;
+      }
+    });
+    return { word, count };
+  }).filter(f => f.count > 0).sort((a, b) => b.count - a.count);
+
   return (
     <PageContainer
-      title="Interview Transcript"
+      title={`${reportData?.title || 'Interview'} Transcript`}
       subtitle="Complete conversation transcript & communication metrics"
     >
       <div className="space-y-6">
@@ -61,15 +115,15 @@ export const TranscriptAnalysis: React.FC = () => {
                   : 'text-slate-600 hover:text-slate-900'
               }`}
             >
-              <Activity className="w-4 h-4" />
-              <span>AI Analysis</span>
+              <BarChart2 className="w-4 h-4" />
+              <span>Deep Analysis</span>
             </button>
           </div>
 
           <Button
             variant="gradient"
             size="md"
-            onClick={() => navigate('/interview/report')}
+            onClick={() => navigate(`/interview/report?session=${sessionId}`)}
             icon={<ArrowRight className="w-4 h-4" />}
           >
             View Full Score Report
@@ -85,14 +139,14 @@ export const TranscriptAnalysis: React.FC = () => {
                 <div className="flex items-center gap-2">
                   <Clock className="w-4 h-4 text-slate-400" />
                   <span className="text-xs font-bold text-slate-700 uppercase tracking-wider">
-                    Timeline Logs (15 Sep 2026)
+                    Timeline Logs ({new Date(reportData?.created_at || new Date()).toLocaleDateString()})
                   </span>
                 </div>
-                <span className="text-xs text-slate-400 font-mono">Total duration: 28 min</span>
+                <span className="text-xs text-slate-400 font-mono">Total duration: 15 min</span>
               </div>
 
               <div className="space-y-4 divide-y divide-slate-100/80">
-                {mockTranscriptConversation.map((item) => {
+                {transcripts.map((item: any) => {
                   const isAi = item.sender === 'ai';
                   return (
                     <div key={item.id} className="pt-4 first:pt-0 flex items-start gap-3.5">
@@ -119,7 +173,7 @@ export const TranscriptAnalysis: React.FC = () => {
                             {item.timestamp}
                           </span>
                         </div>
-                        <p className="text-xs sm:text-sm text-slate-700 leading-relaxed">
+                        <p className="text-xs sm:text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">
                           {item.text}
                         </p>
                       </div>
@@ -142,16 +196,16 @@ export const TranscriptAnalysis: React.FC = () => {
 
               {/* Metrics List */}
               <div className="space-y-3.5">
-                {mockCommunicationMetrics.map((metric) => (
+                {metrics.map((metric: any) => (
                   <div key={metric.label} className="space-y-1">
                     <div className="flex items-center justify-between text-xs">
                       <span className="font-semibold text-slate-700">{metric.label}</span>
-                      {getStatusBadge(metric.status)}
+                      {getStatusBadge(metric.status || (metric.score > 80 ? 'Good' : 'Medium'))}
                     </div>
                     <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
                       <div
                         className="h-full bg-indigo-600 rounded-full transition-all duration-500"
-                        style={{ width: `${metric.score}%` }}
+                        style={{ width: `${metric.score || 0}%` }}
                       />
                     </div>
                   </div>

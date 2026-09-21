@@ -52,36 +52,48 @@ export const TestResultsPanel: React.FC<TestResultsPanelProps> = ({ results, isR
         </div>
       </div>
 
+      {/* Execution Errors */}
+      {(results.compileError || results.runtimeError) && (
+        <div className="p-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs font-mono whitespace-pre-wrap overflow-auto max-h-48 shadow-xs">
+          <span className="font-bold uppercase tracking-wide block mb-1 text-[11px] text-rose-900">Execution Error</span>
+          {results.compileError || results.runtimeError}
+        </div>
+      )}
+
       {/* Test Cases Checklist */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        {results.results.map((tc) => (
-          <div
-            key={tc.id}
-            className="flex items-start gap-2.5 p-3 rounded-xl bg-slate-50 border border-slate-200/70 text-xs min-w-0"
-          >
-            {tc.status === 'passed' ? (
-              <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
-            ) : (
-              <XCircle className="w-4 h-4 text-rose-500 shrink-0 mt-0.5" />
-            )}
-            <div className="min-w-0 flex-1">
-              <p className="font-bold text-slate-800 leading-tight">Test Case #{tc.id}</p>
-              <p className="text-[11px] text-slate-500 truncate font-mono mt-0.5" title={tc.input}>{tc.input}</p>
+      {!results.compileError && !results.runtimeError && results.results?.length > 0 && (
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          {results.results.map((tc) => (
+            <div
+              key={tc.id}
+              className="flex items-start gap-2.5 p-3 rounded-xl bg-slate-50 border border-slate-200/70 text-xs min-w-0"
+            >
+              {tc.status === 'passed' ? (
+                <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
+              ) : (
+                <XCircle className="w-4 h-4 text-rose-500 shrink-0 mt-0.5" />
+              )}
+              <div className="min-w-0 flex-1">
+                <p className="font-bold text-slate-800 leading-tight">Test Case #{tc.id}</p>
+                <p className="text-[11px] text-slate-500 truncate font-mono mt-0.5" title={tc.input}>{tc.input}</p>
+              </div>
             </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
 
       {/* AI Feedback card */}
-      <div className="p-4 rounded-xl bg-gradient-to-r from-emerald-50/80 via-teal-50/80 to-emerald-50/40 border border-emerald-200/80 flex items-start gap-3 shadow-xs">
-        <div className="w-7 h-7 rounded-lg bg-emerald-600 text-white flex items-center justify-center shrink-0 mt-0.5 shadow-xs">
-          <Sparkles className="w-4 h-4" />
+      {results.aiFeedback && (
+        <div className="p-4 rounded-xl bg-gradient-to-r from-emerald-50/80 via-teal-50/80 to-emerald-50/40 border border-emerald-200/80 flex items-start gap-3 shadow-xs">
+          <div className="w-7 h-7 rounded-lg bg-emerald-600 text-white flex items-center justify-center shrink-0 mt-0.5 shadow-xs">
+            <Sparkles className="w-4 h-4" />
+          </div>
+          <div className="text-xs min-w-0 flex-1">
+            <h5 className="font-bold text-emerald-900 uppercase tracking-wide text-[11px]">AI Performance Verdict</h5>
+            <p className="text-emerald-800 mt-1 leading-relaxed font-medium">{results.aiFeedback}</p>
+          </div>
         </div>
-        <div className="text-xs min-w-0 flex-1">
-          <h5 className="font-bold text-emerald-900 uppercase tracking-wide text-[11px]">AI Performance Verdict</h5>
-          <p className="text-emerald-800 mt-1 leading-relaxed font-medium">{results.aiFeedback}</p>
-        </div>
-      </div>
+      )}
     </div>
   );
 };

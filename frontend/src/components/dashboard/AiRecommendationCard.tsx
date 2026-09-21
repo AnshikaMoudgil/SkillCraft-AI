@@ -3,9 +3,32 @@ import { Card } from '../common/Card';
 import { Button } from '../common/Button';
 import { Bot, ArrowRight, Sparkles } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
 
 export const AiRecommendationCard: React.FC = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
+
+  const getRecommendation = () => {
+    if (user.interviewsCompleted === 0) {
+      return {
+        title: "Ready to start your journey?",
+        desc: "Take your first mock interview to get a baseline score and personalized learning plan."
+      };
+    }
+    if (user.overallScore < 70) {
+      return {
+        title: "Focus on fundamentals.",
+        desc: `Your overall score of ${user.overallScore}% indicates room for improvement. Focus on Core CS concepts next.`
+      };
+    }
+    return {
+      title: "You're doing great!",
+      desc: `Your overall score of ${user.overallScore}% is solid. Practice advanced algorithms to reach 90%+.`
+    };
+  };
+
+  const rec = getRecommendation();
 
   return (
     <Card className="p-6 sm:p-7 relative overflow-hidden bg-gradient-to-br from-[#F5F8FF] via-white to-[#FAF5FF] border border-indigo-100 shadow-sm">
@@ -21,12 +44,11 @@ export const AiRecommendationCard: React.FC = () => {
           </div>
 
           <h3 className="text-base sm:text-lg font-bold text-slate-900 leading-snug">
-            Your DBMS scores have dropped in your last 2 interviews.
+            {rec.title}
           </h3>
 
           <p className="text-sm text-slate-600 leading-relaxed">
-            Focus on <span className="font-semibold text-indigo-700">Transactions</span> and{' '}
-            <span className="font-semibold text-purple-700">Normalization</span> next to reach your target readiness of 85%+.
+            {rec.desc}
           </p>
 
           <div className="pt-1">

@@ -1,11 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { PageContainer } from '../components/layout/PageContainer';
 import { Card } from '../components/common/Card';
 import { Button } from '../components/common/Button';
-import { mock7DayPlan } from '../data/mockLearningPlan';
 import { DayPlan } from '../types';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '../context/ToastContext';
+import { apiClient } from '../lib/apiClient';
 import {
   Calendar,
   CheckCircle2,
@@ -18,9 +18,26 @@ import {
 } from 'lucide-react';
 
 export const LearningPlan: React.FC = () => {
-  const [plans, setPlans] = useState<DayPlan[]>(mock7DayPlan);
+  const [plans, setPlans] = useState<DayPlan[]>([]);
+  const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
   const { showToast } = useToast();
+
+  useEffect(() => {
+    const fetchPlan = async () => {
+      try {
+        const data = await apiClient.get<DayPlan[]>('/interview/latest-plan');
+        if (data && data.length > 0) {
+          setPlans(data);
+        }
+      } catch (err) {
+        console.error("Failed to fetch learning plan", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchPlan();
+  }, []);
 
   const toggleDayCompletion = (dayNum: number) => {
     setPlans((prev) =>
@@ -50,54 +67,62 @@ export const LearningPlan: React.FC = () => {
   };
 
   const completedCount = plans.filter((p) => p.status === 'completed').length;
-  const progressPercent = Math.round((completedCount / plans.length) * 100);
+  const progressPercent = plans.length > 0 ? Math.round((completedCount / plans.length) * 100) : 0;
 
   return (
     <PageContainer
-      title="Your 7-Day AI Learning Plan"
+      title="Your AI Learning Plan"
       subtitle="Personalized based on your interview performance."
     >
       <div className="space-y-6 max-w-5xl mx-auto">
-        {/* Top Progress Summary Header */}
-        <div className="p-6 rounded-3xl bg-gradient-to-r from-indigo-900 via-indigo-950 to-[#071A33] text-white flex flex-col sm:flex-row sm:items-center justify-between gap-5 shadow-xl">
-          <div className="space-y-2 max-w-xl">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/20 text-indigo-300 text-xs font-bold">
-              <Sparkles className="w-3.5 h-3.5" />
-              <span>Target Remedial Curriculum</span>
+        {loading ? (
+          <div className="flex items-center justify-center h-48 text-slate-500 animate-pulse">Loading your personalized learning plan...</div>
+        ) : plans.length === 0 ? (
+          <div className="flex items-center justify-center h-48 text-slate-500">
+            No learning plan available yet. Complete a mock interview to generate one.
+          </div>
+        ) : (
+          <>
+            {/* Top Progress Summary Header */}
+            <div className="p-6 rounded-3xl bg-gradient-to-r from-indigo-900 via-indigo-950 to-[#071A33] text-white flex flex-col sm:flex-row sm:items-center justify-between gap-5 shadow-xl">
+              <div className="space-y-2 max-w-xl">
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/20 text-indigo-300 text-xs font-bold">
+                  <Sparkles className="w-3.5 h-3.5" />
+                  <span>Target Remedial Curriculum</span>
+                </div>
+                <h3 className="text-xl sm:text-2xl font-extrabold tracking-tight">
+                  Core Fundamentals Focus
+                </h3>
+                <p className="text-xs sm:text-sm text-indigo-200/80 leading-relaxed">
+                  Based on your last interview, finishing this sprint will boost your predicted interview success probability to 94%.
+                </p>
+              </div>
+
+              <div className="shrink-0 bg-white/10 backdrop-blur-md rounded-2xl p-4 border border-white/10 text-center min-w-[140px]">
+                <span className="text-3xl font-extrabold text-white">{progressPercent}%</span>
+                <p className="text-xs text-indigo-200 mt-0.5">{completedCount} of {plans.length} Steps Done</p>
+              </div>
             </div>
-            <h3 className="text-xl sm:text-2xl font-extrabold tracking-tight">
-              DBMS & Core Fundamentals Focus
-            </h3>
-            <p className="text-xs sm:text-sm text-indigo-200/80 leading-relaxed">
-              Based on your last 3 technical mocks, finishing this 7-day sprint will boost your predicted interview success probability to 94%.
-            </p>
-          </div>
 
-          <div className="shrink-0 bg-white/10 backdrop-blur-md rounded-2xl p-4 border border-white/10 text-center min-w-[140px]">
-            <span className="text-3xl font-extrabold text-white">{progressPercent}%</span>
-            <p className="text-xs text-indigo-200 mt-0.5">{completedCount} of 7 Days Done</p>
-          </div>
-        </div>
+            {/* 7-Day Timeline Cards matching reference Screen 12 */}
+            <div className="space-y-3.5">
+              {plans.map((day) => {
+                const isCompleted = day.status === 'completed';
+                const isInProgress = day.status === 'in_progress';
 
-        {/* 7-Day Timeline Cards matching reference Screen 12 */}
-        <div className="space-y-3.5">
-          {plans.map((day) => {
-            const isCompleted = day.status === 'completed';
-            const isInProgress = day.status === 'in_progress';
-
-            return (
-              <Card
-                key={day.day}
-                className={`p-5 sm:p-6 transition-all border ${
-                  isCompleted
-                    ? 'border-emerald-200 bg-emerald-50/20'
-                    : isInProgress
-                    ? 'border-indigo-300 bg-indigo-50/20 shadow-md ring-2 ring-indigo-500/10'
-                    : 'border-slate-200/80 bg-white'
-                }`}
-              >
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                  {/* Left info */}
+                return (
+                  <Card
+                    key={day.day}
+                    className={`p-5 sm:p-6 transition-all border ${
+                      isCompleted
+                        ? 'border-emerald-200 bg-emerald-50/20'
+                        : isInProgress
+                        ? 'border-indigo-300 bg-indigo-50/20 shadow-md ring-2 ring-indigo-500/10'
+                        : 'border-slate-200/80 bg-white'
+                    }`}
+                  >
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                      {/* Left info */}
                   <div className="flex items-start gap-4">
                     {/* Day Number Badge */}
                     <button
@@ -162,10 +187,12 @@ export const LearningPlan: React.FC = () => {
                     </Button>
                   </div>
                 </div>
-              </Card>
-            );
-          })}
-        </div>
+                  </Card>
+                );
+              })}
+            </div>
+          </>
+        )}
       </div>
     </PageContainer>
   );

@@ -1,74 +1,94 @@
 import { InterviewPlanItem } from '../types';
-import { mockDefaultInterviewPlan } from '../data/mockInterviews';
 
-/**
- * Interview Service
- * 
- * Manages interview configuration, plan generation, and lifecycle.
- * 
- * TODO: Future Integration with Microsoft Foundry Agent
- * - Dynamically synthesize interview questions using candidate profile & job spec
- * - Implement state machine for real-time interview progression
- */
+import { apiClient } from '../lib/apiClient';
 
 export interface SetupConfig {
+  title?: string;
+  type?: string;
   role: string;
   difficulty: 'Beginner' | 'Intermediate' | 'Advanced' | 'Expert';
   focusAreas: string[];
   durationMinutes: number;
+  number_of_questions?: number;
+  experience_level?: string;
+  programming_language?: string;
+  resumeContext?: string;
 }
 
 export const interviewService = {
   /**
    * Generates a tailored interview plan based on role, difficulty, and focus areas
    */
-  async generateInterviewPlan(config: SetupConfig): Promise<InterviewPlanItem[]> {
-    await new Promise((res) => setTimeout(res, 850));
+  async generateInterviewPlan(config: SetupConfig): Promise<any> {
+    const payload = {
+      title: config.title || "Mock Interview",
+      type: config.type || "technical",
+      role: config.role,
+      difficulty: config.difficulty,
+      number_of_questions: config.number_of_questions || 5,
+      experience_level: config.experience_level || "Fresher",
+      programming_language: config.programming_language || null,
+      focus_areas: config.focusAreas || [],
+      resumeContext: config.resumeContext || null
+    };
+    return await apiClient.post('/interview/plan', payload);
+  },
 
-    // Customize topic steps based on selected focus areas
-    const customizedPlan = mockDefaultInterviewPlan.map((item) => {
-      if (item.step === 3 && config.focusAreas.length > 0) {
-        return { ...item, title: `${config.focusAreas[0]} Core Principles`, topic: config.focusAreas[0] };
-      }
-      if (item.step === 6 && config.focusAreas.length > 1) {
-        return { ...item, title: `${config.focusAreas[1]} Deep Dive`, topic: config.focusAreas[1] };
-      }
-      return item;
-    });
-
-    return customizedPlan;
+  /**
+   * Start a new live interview session
+   */
+  async startInterview(config: SetupConfig): Promise<any> {
+    const payload = {
+      title: config.title || "Mock Interview",
+      type: config.type || "technical",
+      role: config.role,
+      difficulty: config.difficulty,
+      number_of_questions: config.number_of_questions || 5,
+      experience_level: config.experience_level || "Fresher",
+      programming_language: config.programming_language || null,
+      focus_areas: config.focusAreas || [],
+      resumeContext: config.resumeContext || null,
+      generated_plan: (config as any).generated_plan || null
+    };
+    
+    return await apiClient.post('/interview/start', payload);
   },
 
   /**
    * Get next dynamic question in an adaptive interview session
    */
-  async getNextAdaptiveQuestion(currentQuestionIndex: number, lastAnswer: string): Promise<{
-    question: string;
-    topic: string;
-    totalQuestions: number;
-  }> {
-    await new Promise((res) => setTimeout(res, 700));
-
-    const followUps = [
-      {
-        question: "That's a good approach. What happens if the list has no cycle? How would the algorithm safely terminate without null pointer exceptions?",
-        topic: 'Linked Lists'
-      },
-      {
-        question: "Let us pivot to Database Systems. Can you explain the difference between Optimistic and Pessimistic Concurrency Control in high-throughput transactions?",
-        topic: 'DBMS'
-      },
-      {
-        question: "How would you handle a distributed transaction across two microservices where one fails mid-execution?",
-        topic: 'System Design'
-      }
-    ];
-
-    const item = followUps[currentQuestionIndex % followUps.length];
-    return {
-      question: item.question,
-      topic: item.topic,
-      totalQuestions: 9
+  async respondToCandidate(sessionId: string, question: string, answer: string, topic: string): Promise<any> {
+    const payload = {
+      sessionId,
+      question,
+      answer,
+      topic
     };
+    return await apiClient.post('/interview/respond', payload);
+  },
+  
+  /**
+   * Conclude and evaluate the interview
+   */
+  async evaluateInterview(sessionId: string, transcripts: any[]): Promise<any> {
+    const payload = {
+      sessionId,
+      transcripts
+    };
+    return await apiClient.post('/interview/evaluate', payload);
+  },
+
+  /**
+   * Fetch final interview report
+   */
+  async getInterviewReport(sessionId: string): Promise<any> {
+    return await apiClient.get(`/interview/report/${sessionId}`);
+  },
+
+  /**
+   * Fetch interview transcripts
+   */
+  async getInterviewTranscripts(sessionId: string): Promise<any[]> {
+    return await apiClient.get(`/interview/transcript/${sessionId}`);
   }
 };

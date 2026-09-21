@@ -21,6 +21,9 @@ class Settings(BaseSettings):
     # Microsoft Foundry & Agent Service
     AZURE_FOUNDRY_ENDPOINT: str = ""
     AZURE_FOUNDRY_API_KEY: str = ""
+    AZURE_TENANT_ID: str = ""
+    AZURE_CLIENT_ID: str = ""
+    AZURE_CLIENT_SECRET: str = ""
     AZURE_FOUNDRY_PROJECT_CONNECTION_STRING: str = ""
     AZURE_OPENAI_DEPLOYMENT_NAME: str = "gpt-4o"
     AZURE_OPENAI_API_VERSION: str = "2024-05-01-preview"
@@ -35,6 +38,10 @@ class Settings(BaseSettings):
     AZURE_SPEECH_KEY: str = ""
     AZURE_SPEECH_REGION: str = "eastus"
     AZURE_SPEECH_VOICE_NAME: str = "en-US-JennyNeural"
+    
+    # Judge0
+    JUDGE0_URL: str = "https://ce.judge0.com"
+    # JUDGE0_API_KEY: str = ""  # Not needed for public CE, but good to have in config
 
     model_config = SettingsConfigDict(
         env_file=os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), ".env"),
@@ -52,11 +59,11 @@ class Settings(BaseSettings):
 
     @property
     def is_supabase_configured(self) -> bool:
-        return bool(self.SUPABASE_URL and self.SUPABASE_KEY)
+        return bool(self.SUPABASE_URL and self.SUPABASE_KEY and "your-project-id" not in self.SUPABASE_URL)
 
     @property
     def is_foundry_configured(self) -> bool:
-        return bool(self.AZURE_FOUNDRY_ENDPOINT and self.AZURE_FOUNDRY_API_KEY)
+        return bool(self.AZURE_FOUNDRY_ENDPOINT)
 
     @property
     def is_search_configured(self) -> bool:

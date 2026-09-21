@@ -1,4 +1,5 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
 from app.routers import auth, interview, coding, resume, voice
@@ -35,6 +36,15 @@ app.include_router(interview.router, prefix=api_v1_prefix)
 app.include_router(coding.router, prefix=api_v1_prefix)
 app.include_router(resume.router, prefix=api_v1_prefix)
 app.include_router(voice.router, prefix=api_v1_prefix)
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    print(f"Global Exception: {exc}")
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "Internal Server Error", "error": str(exc)},
+        headers={"Access-Control-Allow-Origin": "*"}
+    )
 
 @app.get("/health", tags=["Health"])
 async def health_check():

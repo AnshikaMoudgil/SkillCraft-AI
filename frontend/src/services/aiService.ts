@@ -25,30 +25,11 @@ export const aiService = {
         userCode,
         hintIndex,
       });
-      if (res?.hint) return res.hint;
+      return res?.hint || 'No hint generated.';
     } catch (e) {
-      console.warn('[aiService] Backend unreachable, using fallback hint engine:', e);
+      console.error('[aiService] Backend unreachable:', e);
+      throw e;
     }
-
-    // Local Fallback
-    const hintsMap: Record<string, string[]> = {
-      'Two Sum': [
-        '💡 Think about how you can remember numbers you have already visited using a HashMap.',
-        '💡 For each number x, you are looking for target - x. Can you check if that complement was stored in O(1)?',
-        '💡 Store nums[i] as key and index i as value in a single loop traversal.'
-      ],
-      'Valid Parentheses': [
-        '💡 A Stack is the optimal data structure because the last opened bracket must be the first closed.',
-        '💡 Match each closing bracket with the element on top of your stack.',
-        '💡 Make sure to verify whether the stack is completely empty at the end of traversal.'
-      ]
-    };
-
-    const hints = hintsMap[problemTitle] || [
-      '💡 Consider the edge cases first and think of time vs space trade-offs.'
-    ];
-
-    return hints[hintIndex % hints.length];
   },
 
   /**
@@ -71,17 +52,11 @@ export const aiService = {
         code,
         language: 'javascript',
       });
-      if (res?.summary) return res;
+      return res;
     } catch (e) {
-      console.warn('[aiService] Backend review error, using fallback review:', e);
+      console.error('[aiService] Backend review error:', e);
+      throw e;
     }
-
-    return {
-      summary: 'Your approach is idiomatic, clean, and demonstrates solid algorithmic understanding.',
-      style: 'Follows standard naming conventions and indentation.',
-      efficiency: 'Optimal linear time complexity O(n) using Hash Table lookup.',
-      cleanliness: 'Clear variable naming and safe edge case handling.'
-    };
   },
 
   /**
@@ -101,16 +76,11 @@ export const aiService = {
         code,
         language: 'javascript',
       });
-      if (res?.timeComplexity) return res;
+      return res;
     } catch (e) {
-      console.warn('[aiService] Backend complexity error, using fallback:', e);
+      console.error('[aiService] Backend complexity error:', e);
+      throw e;
     }
-
-    return {
-      timeComplexity: 'O(n)',
-      spaceComplexity: 'O(n)',
-      breakdown: 'Iterates through array elements once (n iterations). Hash table operations run in average O(1) time. Space scales linearly with unique elements stored.'
-    };
   },
 
   /**
@@ -132,15 +102,10 @@ export const aiService = {
         answer,
         topic: 'System Design',
       });
-      if (res?.feedback) return res;
+      return res;
     } catch (e) {
-      console.warn('[aiService] Backend interview evaluation error, using fallback:', e);
+      console.error('[aiService] Backend interview evaluation error:', e);
+      throw e;
     }
-
-    return {
-      score: 88,
-      feedback: 'Excellent explanation. You clearly articulated the algorithm and identified pointer movement nuances.',
-      followUp: 'How would this algorithm perform in terms of cache locality compared to an array-based cycle detector?'
-    };
   }
 };
