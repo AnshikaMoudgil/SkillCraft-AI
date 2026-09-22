@@ -10,18 +10,22 @@ import {
   Lock,
   User,
   Bot,
-  Laptop,
-  Terminal,
   ArrowRight,
-  ShieldCheck
+  ShieldCheck,
+  Eye,
+  EyeOff,
+  Zap,
+  Code2,
+  Mic
 } from 'lucide-react';
 
 export const Login: React.FC = () => {
   const location = useLocation();
   const [isLoginTab, setIsLoginTab] = useState(location.pathname !== '/signup');
-  const [email, setEmail] = useState('devansh.sharma@example.com');
-  const [password, setPassword] = useState('password123');
-  const [name, setName] = useState('Devansh Sharma');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [name, setName] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -34,7 +38,11 @@ export const Login: React.FC = () => {
     e.preventDefault();
     setError('');
 
-    if (!email || !password || (!isLoginTab && !name)) {
+    const trimmedEmail = email.trim();
+    const trimmedPassword = password.trim();
+    const trimmedName = name.trim();
+
+    if (!trimmedEmail || !trimmedPassword || (!isLoginTab && !trimmedName)) {
       setError('Please fill in all required fields.');
       return;
     }
@@ -44,111 +52,108 @@ export const Login: React.FC = () => {
     try {
       let success = false;
       if (isLoginTab) {
-        success = await login(email, password, name);
+        success = await login(trimmedEmail, trimmedPassword, trimmedName || undefined);
       } else {
-        success = await signup(name, email, password);
+        success = await signup(trimmedName, trimmedEmail, trimmedPassword);
       }
 
       setIsLoading(false);
 
       if (success) {
-        showToast(`Welcome back, ${name.split(' ')[0]}!`, 'success');
+        const greetingName = trimmedName || trimmedEmail.split('@')[0];
+        showToast(`Welcome to SkillCraft AI, ${greetingName}!`, 'success');
         navigate('/dashboard');
       } else {
-        setError('Authentication failed. Please check your details.');
+        setError('Authentication failed. Please check your email and password.');
       }
     } catch {
       setIsLoading(false);
-      setError('An error occurred during authentication.');
+      setError('An error occurred during authentication. Please try again.');
     }
-  };
-
-  const handleOAuth = async (provider: string) => {
-    await login(email, 'oauth_pass', name);
-    showToast(`Signed in with ${provider}`, 'success');
-    navigate('/dashboard');
   };
 
   return (
     <div className="min-h-screen w-full flex flex-col lg:flex-row bg-[#F7F9FC]">
-      {/* Left Visual AI Hero Panel (Dark Navy & Purple - matching reference) */}
-      <div className="lg:w-1/2 bg-[#071A33] text-white p-8 sm:p-12 lg:p-16 flex flex-col justify-between relative overflow-hidden">
+      {/* Left Visual AI Hero Panel */}
+      <div className="lg:w-1/2 bg-[#061325] text-white p-8 sm:p-12 lg:p-16 flex flex-col justify-between relative overflow-hidden">
         {/* Ambient background glows */}
-        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-indigo-600/20 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-indigo-600/25 rounded-full blur-3xl pointer-events-none" />
         <div className="absolute bottom-10 right-10 w-80 h-80 bg-purple-600/20 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute -top-10 -right-10 w-72 h-72 bg-blue-500/15 rounded-full blur-3xl pointer-events-none" />
 
         {/* Brand */}
-        <div className="relative z-10 flex items-center gap-3">
-          <div className="w-11 h-11 rounded-xl bg-gradient-to-tr from-[#4F46E5] to-[#7C3AED] flex items-center justify-center text-white shadow-lg shadow-indigo-600/30">
-            <Sparkles className="w-6 h-6" />
+        <div className="relative z-10 flex items-center gap-3.5">
+          <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-[#4F46E5] via-[#6366F1] to-[#9333EA] flex items-center justify-center text-white shadow-xl shadow-indigo-600/35 ring-1 ring-white/20">
+            <Sparkles className="w-5 h-5 animate-pulse" />
           </div>
           <div>
-            <h1 className="text-xl font-bold tracking-tight text-white leading-none">
+            <h1 className="text-xl font-extrabold tracking-tight text-white leading-none">
               SkillCraft AI
             </h1>
-            <p className="text-xs text-indigo-300 font-medium tracking-wide mt-1">
+            <p className="text-xs text-indigo-300/90 font-medium tracking-wide mt-1">
               Practice. Improve. Get Hired.
             </p>
           </div>
         </div>
 
         {/* Hero Value Proposition */}
-        <div className="relative z-10 my-12 space-y-6 max-w-lg">
-          <h2 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight leading-tight">
-            Your personal AI-powered <br />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-300 via-purple-300 to-pink-300">
-              interview preparation partner.
+        <div className="relative z-10 my-10 space-y-6 max-w-lg">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/15 border border-indigo-400/25 text-indigo-300 text-xs font-semibold backdrop-blur-md">
+            <Zap className="w-3.5 h-3.5 text-amber-400" />
+            <span>AI-Driven Mock Interviews & Coding Sandbox</span>
+          </div>
+
+          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-white tracking-tight leading-[1.15]">
+            Master technical interviews with <br />
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-300 via-purple-200 to-pink-300">
+              real-time AI feedback.
             </span>
           </h2>
 
-          <p className="text-slate-300 text-sm sm:text-base leading-relaxed">
-            Practice real interviews, get instant AI feedback, and build the confidence to land your dream job with personalized technical & behavioral mock sessions.
+          <p className="text-slate-300/90 text-sm sm:text-base leading-relaxed">
+            Prepare, practice, and excel in coding, system design, and behavioral interviews with tailored Microsoft Foundry AI agents and speech intelligence.
           </p>
 
-          {/* 4 Benefit Pills (as in reference image) */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+          {/* Benefit Pills */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
             {[
-              'Practice Real Interviews',
-              'Get AI Feedback',
-              'Build Your Confidence',
-              'Land Your Dream Job'
-            ].map((benefit) => (
-              <div
-                key={benefit}
-                className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl bg-white/10 backdrop-blur-md border border-white/10 text-xs font-semibold text-white shadow-sm"
-              >
-                <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-                <span>{benefit}</span>
-              </div>
-            ))}
+              { label: 'Live Coding IDE with Big-O Audits', icon: Code2 },
+              { label: 'Neural Voice & Speech Interviews', icon: Mic },
+              { label: 'Contextual Resume RAG Grounding', icon: CheckCircle2 },
+              { label: 'Tailored Step-by-Step Learning Plans', icon: Bot }
+            ].map((benefit) => {
+              const Icon = benefit.icon;
+              return (
+                <div
+                  key={benefit.label}
+                  className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl bg-white/[0.07] backdrop-blur-md border border-white/10 text-xs font-medium text-slate-200 shadow-sm hover:bg-white/[0.12] transition-colors"
+                >
+                  <Icon className="w-4 h-4 text-indigo-400 shrink-0" />
+                  <span className="truncate">{benefit.label}</span>
+                </div>
+              );
+            })}
           </div>
 
-          {/* Isometric AI Character Illustration Card */}
-          <div className="pt-4 relative">
-            <div className="relative mx-auto max-w-sm rounded-2xl bg-gradient-to-tr from-slate-900/90 to-indigo-950/90 p-3.5 border border-indigo-500/30 shadow-2xl backdrop-blur-md overflow-hidden">
-              <div className="rounded-xl overflow-hidden mb-3 border border-indigo-500/20 shadow-inner">
-                <img
-                  src="/images/auth-hero.jpg"
-                  alt="SkillCraft AI Interview Coaching"
-                  className="w-full h-36 object-cover object-center transform hover:scale-105 transition-transform duration-500"
-                />
-              </div>
-              <div className="flex items-center justify-between pb-2 border-b border-slate-800">
-                <div className="flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full bg-rose-500" />
-                  <span className="w-2 h-2 rounded-full bg-amber-500" />
-                  <span className="w-2 h-2 rounded-full bg-emerald-500" />
+          {/* Simulation Preview Card */}
+          <div className="pt-2 relative">
+            <div className="relative rounded-2xl bg-gradient-to-tr from-slate-900/95 to-[#0b1b36]/95 p-4 border border-indigo-500/25 shadow-2xl backdrop-blur-xl">
+              <div className="flex items-center justify-between pb-3 mb-3 border-b border-slate-800/80">
+                <div className="flex items-center gap-2">
+                  <span className="w-2.5 h-2.5 rounded-full bg-rose-500/80" />
+                  <span className="w-2.5 h-2.5 rounded-full bg-amber-500/80" />
+                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-500/80" />
                 </div>
-                <span className="text-[11px] font-mono text-indigo-300 flex items-center gap-1">
-                  <Bot className="w-3.5 h-3.5" /> SkillCraft AI Simulation
+                <span className="text-[11px] font-mono text-indigo-300 flex items-center gap-1.5 font-medium">
+                  <Bot className="w-3.5 h-3.5 text-indigo-400" /> Foundry Agent Session
                 </span>
               </div>
-              <div className="py-2.5 space-y-1.5 text-[11px] font-mono">
-                <div className="p-2 rounded-lg bg-indigo-900/40 border border-indigo-500/20 text-indigo-200">
-                  <span className="text-indigo-400 font-bold">AI:</span> "Explain how you optimize SQL queries using B-Tree indexing."
+              <div className="space-y-2 text-xs font-mono">
+                <div className="p-2.5 rounded-xl bg-indigo-950/60 border border-indigo-500/20 text-indigo-200/90 leading-relaxed">
+                  <span className="text-indigo-400 font-bold">Interviewer:</span> &ldquo;How would you structure a distributed rate limiter for millions of concurrent requests?&rdquo;
                 </div>
-                <div className="p-2 rounded-lg bg-emerald-900/30 border border-emerald-500/20 text-emerald-200">
-                  <span className="text-emerald-400 font-bold">Candidate:</span> "By leveraging covering indexes to prevent random I/O lookups..."
+                <div className="p-2.5 rounded-xl bg-emerald-950/50 border border-emerald-500/20 text-emerald-200/90 leading-relaxed">
+                  <span className="text-emerald-400 font-bold">Candidate:</span> &ldquo;I would leverage Redis with Token Bucket / Sliding Window Log to ensure atomic increments...&rdquo;
                 </div>
               </div>
             </div>
@@ -156,30 +161,30 @@ export const Login: React.FC = () => {
         </div>
 
         {/* Footer info */}
-        <div className="relative z-10 text-xs text-slate-400 flex items-center gap-2">
-          <ShieldCheck className="w-4 h-4 text-indigo-400" />
-          <span>Enterprise-grade security • Powered by Azure AI & Foundry</span>
+        <div className="relative z-10 text-xs text-slate-400 flex items-center gap-2 pt-4 border-t border-white/10">
+          <ShieldCheck className="w-4 h-4 text-indigo-400 shrink-0" />
+          <span>Enterprise-Grade Security &bull; Powered by Microsoft Foundry &amp; Azure AI</span>
         </div>
       </div>
 
       {/* Right Login/Signup Card Form */}
       <div className="lg:w-1/2 flex items-center justify-center p-6 sm:p-12 lg:p-16">
-        <div className="w-full max-w-md bg-white rounded-3xl p-8 sm:p-10 shadow-xl border border-slate-100">
-          {/* Tabs */}
-          <div className="flex items-center p-1 bg-slate-100 rounded-xl mb-8">
+        <div className="w-full max-w-md bg-white rounded-3xl p-8 sm:p-10 shadow-2xl shadow-slate-200/60 border border-slate-100">
+          {/* Tab Switcher */}
+          <div className="flex items-center p-1.5 bg-slate-100/90 rounded-2xl mb-8">
             <button
               type="button"
               onClick={() => {
                 setIsLoginTab(true);
                 setError('');
               }}
-              className={`flex-1 py-2 text-xs sm:text-sm font-bold rounded-lg transition-all ${
+              className={`flex-1 py-2.5 text-xs sm:text-sm font-bold rounded-xl transition-all duration-200 ${
                 isLoginTab
-                  ? 'bg-white text-indigo-600 shadow-sm'
+                  ? 'bg-white text-indigo-600 shadow-md shadow-slate-200/50'
                   : 'text-slate-500 hover:text-slate-800'
               }`}
             >
-              Login
+              Sign In
             </button>
             <button
               type="button"
@@ -187,30 +192,31 @@ export const Login: React.FC = () => {
                 setIsLoginTab(false);
                 setError('');
               }}
-              className={`flex-1 py-2 text-xs sm:text-sm font-bold rounded-lg transition-all ${
+              className={`flex-1 py-2.5 text-xs sm:text-sm font-bold rounded-xl transition-all duration-200 ${
                 !isLoginTab
-                  ? 'bg-white text-indigo-600 shadow-sm'
+                  ? 'bg-white text-indigo-600 shadow-md shadow-slate-200/50'
                   : 'text-slate-500 hover:text-slate-800'
               }`}
             >
-              Sign Up
+              Create Account
             </button>
           </div>
 
           <div className="mb-6">
-            <h2 className="text-2xl font-extrabold text-slate-900 tracking-tight">
-              {isLoginTab ? 'Welcome Back, Devansh Sharma!' : 'Create an Account'}
+            <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
+              {isLoginTab ? 'Welcome Back' : 'Create an Account'}
             </h2>
-            <p className="text-xs sm:text-sm text-slate-500 mt-1">
+            <p className="text-xs sm:text-sm text-slate-500 mt-1.5 leading-relaxed">
               {isLoginTab
-                ? 'Sign in to continue your interview journey.'
-                : 'Join thousands of candidates preparing with AI.'}
+                ? 'Sign in to access your interview practice sessions and score history.'
+                : 'Start your AI interview preparation journey today.'}
             </p>
           </div>
 
           {error && (
-            <div className="mb-4 p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold">
-              {error}
+            <div className="mb-5 p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-medium animate-in fade-in duration-200 flex items-center gap-2">
+              <span className="w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0" />
+              <span>{error}</span>
             </div>
           )}
 
@@ -226,8 +232,8 @@ export const Login: React.FC = () => {
                     type="text"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    placeholder="Devansh Sharma"
-                    className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 transition-all"
+                    placeholder="e.g. Alex Morgan"
+                    className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 transition-all placeholder:text-slate-400"
                   />
                 </div>
               </div>
@@ -243,8 +249,8 @@ export const Login: React.FC = () => {
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="devansh.sharma@example.com"
-                  className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 transition-all"
+                  placeholder="name@example.com"
+                  className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 transition-all placeholder:text-slate-400"
                 />
               </div>
             </div>
@@ -257,8 +263,8 @@ export const Login: React.FC = () => {
                 {isLoginTab && (
                   <button
                     type="button"
-                    onClick={() => showToast('Password reset link sent to email', 'info')}
-                    className="text-xs font-semibold text-indigo-600 hover:text-indigo-800"
+                    onClick={() => showToast('Password reset instructions will be sent to your email.', 'info')}
+                    className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 transition-colors"
                   >
                     Forgot password?
                   </button>
@@ -267,88 +273,65 @@ export const Login: React.FC = () => {
               <div className="relative">
                 <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
                 <input
-                  type="password"
+                  type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••••••"
-                  className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 transition-all"
+                  placeholder="Enter your password"
+                  className="w-full pl-10 pr-10 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 transition-all placeholder:text-slate-400"
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-3 text-slate-400 hover:text-slate-600 transition-colors"
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                >
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
               </div>
             </div>
 
             {isLoginTab && (
-              <div className="flex items-center">
-                <input
-                  type="checkbox"
-                  id="rememberMe"
-                  checked={rememberMe}
-                  onChange={(e) => setRememberMe(e.target.checked)}
-                  className="w-4 h-4 text-indigo-600 border-slate-300 rounded focus:ring-indigo-500"
-                />
-                <label htmlFor="rememberMe" className="ml-2 text-xs font-medium text-slate-600">
-                  Remember me for 30 days
+              <div className="flex items-center justify-between pt-1">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    id="rememberMe"
+                    checked={rememberMe}
+                    onChange={(e) => setRememberMe(e.target.checked)}
+                    className="w-4 h-4 text-indigo-600 border-slate-300 rounded focus:ring-indigo-500/30"
+                  />
+                  <span className="text-xs font-medium text-slate-600">
+                    Remember me on this device
+                  </span>
                 </label>
               </div>
             )}
 
-            <Button
-              type="submit"
-              variant="gradient"
-              size="lg"
-              isLoading={isLoading}
-              className="w-full font-bold"
-            >
-              {isLoginTab ? 'Sign In' : 'Create Free Account'}
-            </Button>
+            <div className="pt-2">
+              <Button
+                type="submit"
+                variant="gradient"
+                size="lg"
+                isLoading={isLoading}
+                className="w-full font-bold shadow-lg shadow-indigo-600/20 flex items-center justify-center gap-2"
+              >
+                <span>{isLoginTab ? 'Sign In to SkillCraft' : 'Create Free Account'}</span>
+                {!isLoading && <ArrowRight className="w-4 h-4" />}
+              </Button>
+            </div>
           </form>
 
-          {/* Social Divider */}
-          <div className="relative my-6 text-center">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-slate-200" />
-            </div>
-            <span className="relative px-3 bg-white text-[11px] font-bold tracking-wider uppercase text-slate-400">
-              Or continue with
-            </span>
-          </div>
-
-          {/* Social OAuth Buttons */}
-          <div>
+          <p className="text-center text-xs text-slate-500 mt-6 pt-5 border-t border-slate-100">
+            {isLoginTab ? "Don't have an account yet? " : 'Already registered? '}
             <button
               type="button"
-              onClick={() => handleOAuth('Google')}
-              className="w-full flex items-center justify-center gap-2.5 py-2.5 px-4 rounded-xl border border-slate-200 hover:bg-slate-50 transition-colors text-xs font-bold text-slate-700 shadow-xs"
+              onClick={() => {
+                setIsLoginTab(!isLoginTab);
+                setError('');
+              }}
+              className="font-bold text-indigo-600 hover:text-indigo-800 transition-colors"
             >
-              <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
-                <path
-                  fill="#4285F4"
-                  d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.66-5.17 3.66-9.17z"
-                />
-                <path
-                  fill="#34A853"
-                  d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.33 24 12 24z"
-                />
-                <path
-                  fill="#FBBC05"
-                  d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.18 0 9.99 0 12s.45 3.82 1.25 5.42l4.03-3.15z"
-                />
-                <path
-                  fill="#EA4335"
-                  d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"
-                />
-              </svg>
-              <span>Continue with Google</span>
-            </button>
-          </div>
-
-          <p className="text-center text-xs text-slate-500 mt-6">
-            {isLoginTab ? "Don't have an account? " : 'Already have an account? '}
-            <button
-              type="button"
-              onClick={() => setIsLoginTab(!isLoginTab)}
-              className="font-bold text-indigo-600 hover:underline"
-            >
-              {isLoginTab ? 'Sign up' : 'Sign in'}
+              {isLoginTab ? 'Sign up here' : 'Sign in here'}
             </button>
           </p>
         </div>
@@ -356,4 +339,4 @@ export const Login: React.FC = () => {
     </div>
   );
 };
-
+export default Login;

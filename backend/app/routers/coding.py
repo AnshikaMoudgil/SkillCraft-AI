@@ -45,17 +45,24 @@ async def get_coding_problems(
     problems = []
     for p in coding_problems_db._problems.values():
         problems.append({
-            "id": p["problem_id"],
-            "title": p["title"],
-            "slug": p["title"].lower().replace(" ", "-"),
-            "difficulty": "Medium", # Default or fetch from db
-            "category": "Algorithms",
-            "description": p["description"],
-            "starterCode": p["starter_code"],
-            "testCases": p["visible_test_cases"],
-            "hints": [],
-            "solutionExplanation": "",
-            "constraints": []
+            "id": p.get("problem_id", p.get("title", "").lower().replace(" ", "-")),
+            "title": p.get("title", ""),
+            "slug": p.get("slug", p.get("title", "").lower().replace(" ", "-")),
+            "difficulty": p.get("difficulty", "Medium"),
+            "category": p.get("category", "Algorithms"),
+            "description": p.get("description", ""),
+            "starterCode": p.get("starter_code", {}),
+            "testCases": p.get("visible_test_cases", []),
+            "examples": [
+                {
+                    "input": t.get("input", ""),
+                    "output": t.get("expected", ""),
+                    "explanation": t.get("explanation", "")
+                } for t in p.get("visible_test_cases", [])
+            ],
+            "hints": p.get("hints", []),
+            "solutionExplanation": p.get("solution_explanation", ""),
+            "constraints": p.get("constraints", [])
         })
     return problems
 

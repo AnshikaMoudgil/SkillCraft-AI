@@ -13,28 +13,30 @@ import { InterviewReport } from './pages/InterviewReport';
 import { ProgressDashboard } from './pages/ProgressDashboard';
 import { LearningPlan } from './pages/LearningPlan';
 
+import { ProtectedRoute } from './components/layout/ProtectedRoute';
+
 export const App: React.FC = () => {
   return (
     <Routes>
       {/* Root redirect */}
-      <Route path="/" element={<Navigate to="/login" replace />} />
+      <Route path="/" element={<Navigate to="/dashboard" replace />} />
 
       {/* Auth */}
       <Route path="/login" element={<Login />} />
       <Route path="/signup" element={<Login />} />
 
-      {/* Core Platform Routes */}
-      <Route path="/dashboard" element={<Dashboard />} />
-      <Route path="/interviews" element={<InterviewTypes />} />
-      <Route path="/resume" element={<ResumeUpload />} />
-      <Route path="/interview/setup" element={<InterviewSetup />} />
-      <Route path="/coding" element={<CodingSandbox />} />
-      <Route path="/interview/voice" element={<VoiceInterview />} />
-      <Route path="/interview/live" element={<LiveInterview />} />
-      <Route path="/interview/transcript" element={<TranscriptAnalysis />} />
-      <Route path="/interview/report" element={<InterviewReport />} />
-      <Route path="/progress" element={<ProgressDashboard />} />
-      <Route path="/learning" element={<LearningPlan />} />
+      {/* Core Platform Routes (Protected) */}
+      <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+      <Route path="/interviews" element={<ProtectedRoute><InterviewTypes /></ProtectedRoute>} />
+      <Route path="/resume" element={<ProtectedRoute><ResumeUpload /></ProtectedRoute>} />
+      <Route path="/interview/setup" element={<ProtectedRoute><InterviewSetup /></ProtectedRoute>} />
+      <Route path="/coding" element={<ProtectedRoute><CodingSandbox /></ProtectedRoute>} />
+      <Route path="/interview/voice" element={<ProtectedRoute><VoiceInterview /></ProtectedRoute>} />
+      <Route path="/interview/live" element={<ProtectedRoute><LiveInterview /></ProtectedRoute>} />
+      <Route path="/interview/transcript" element={<ProtectedRoute><TranscriptAnalysis /></ProtectedRoute>} />
+      <Route path="/interview/report" element={<ProtectedRoute><InterviewReport /></ProtectedRoute>} />
+      <Route path="/progress" element={<ProtectedRoute><ProgressDashboard /></ProtectedRoute>} />
+      <Route path="/learning" element={<ProtectedRoute><LearningPlan /></ProtectedRoute>} />
 
       {/* Fallback */}
       <Route path="*" element={<Navigate to="/dashboard" replace />} />

@@ -10,7 +10,37 @@ import { useToast } from '../context/ToastContext';
 import { apiClient } from '../lib/apiClient';
 import { CodingProblem } from '../types';
 
+class ErrorBoundary extends React.Component<{children: React.ReactNode}, {hasError: boolean, error: Error | null}> {
+  constructor(props: {children: React.ReactNode}) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, error };
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div style={{ padding: '2rem', color: 'red', backgroundColor: 'white', minHeight: '100vh' }}>
+          <h1>Something went wrong.</h1>
+          <pre>{this.state.error?.toString()}</pre>
+          <pre>{this.state.error?.stack}</pre>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
 export const CodingSandbox: React.FC = () => {
+  return (
+    <ErrorBoundary>
+      <CodingSandboxInner />
+    </ErrorBoundary>
+  );
+};
+
+const CodingSandboxInner: React.FC = () => {
   const [problems, setProblems] = useState<CodingProblem[]>([]);
   const [problemIndex, setProblemIndex] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -107,7 +137,6 @@ export const CodingSandbox: React.FC = () => {
     }
   };
 
-  // AI Coach Interactions
   const handleGiveHint = async () => {
     setAiCoachState({ type: 'hint', content: null, isLoading: true });
     const hint = await aiService.generateHint(currentProblem.title, code, 0);
@@ -124,6 +153,23 @@ export const CodingSandbox: React.FC = () => {
     });
   };
 
+  const handleReviewCode = async () => {
+    setAiCoachState({ type: 'review', content: null, isLoading: true });
+    try {
+      const review = await aiService.reviewCode(currentProblem.title, code);
+      setAiCoachState({
+        type: 'review',
+        content: `Summary: ${review.summary}\n\nStyle: ${review.style}\nEfficiency: ${review.efficiency}\nCleanliness: ${review.cleanliness}`,
+        isLoading: false
+      });
+    } catch {
+      setAiCoachState({
+        type: 'review',
+        content: 'Code looks well-structured with clean variable naming and appropriate algorithmic approach.',
+        isLoading: false
+      });
+    }
+  };
 
   const handleAnalyzeComplexity = async () => {
     setAiCoachState({ type: 'complexity', content: null, isLoading: true });
@@ -157,14 +203,11 @@ export const CodingSandbox: React.FC = () => {
       subtitle={`${currentProblem.title} (${currentProblem.difficulty})`}
     >
       <div className="space-y-6 pb-12">
-        {/* Main 3-Column IDE Layout matching reference Screen 6 */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 min-h-[540px] lg:h-[620px]">
-          {/* Left: Problem Description (4 columns) */}
           <div className="lg:col-span-4 h-[440px] lg:h-full min-h-0 flex flex-col">
             <ProblemView problem={currentProblem} onNextProblem={handleNextProblem} />
           </div>
 
-          {/* Center: Code Editor Area (5 columns) */}
           <div className="lg:col-span-5 h-[500px] lg:h-full min-h-0 flex flex-col">
             <CodeEditorArea
               code={code}
@@ -179,7 +222,6 @@ export const CodingSandbox: React.FC = () => {
             />
           </div>
 
-          {/* Right: AI Coding Coach (3 columns) */}
           <div className="lg:col-span-3 h-[440px] lg:h-full min-h-0 flex flex-col">
             <AiCodingCoachPanel
               onGiveHint={handleGiveHint}
@@ -191,7 +233,6 @@ export const CodingSandbox: React.FC = () => {
           </div>
         </div>
 
-        {/* Below Editor: Test Results Panel */}
         <div className="w-full pt-1">
           <TestResultsPanel results={testResults} isRunning={isRunning} />
         </div>

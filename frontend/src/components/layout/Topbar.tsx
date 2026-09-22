@@ -18,7 +18,14 @@ export const Topbar: React.FC<TopbarProps> = ({
   onOpenAiArchitecture
 }) => {
   const { user } = useAuth();
-  const today = 'Wed, 16 Sep 2026';
+  const today = new Intl.DateTimeFormat('en-US', {
+    weekday: 'short',
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric'
+  }).format(new Date());
+
+  const displayName = user.name && user.name.trim() ? user.name : 'Candidate';
 
   return (
     <header className="h-16 border-b border-slate-200/80 bg-white/90 backdrop-blur-md sticky top-0 z-20 px-4 sm:px-8 flex items-center justify-between">
@@ -49,7 +56,7 @@ export const Topbar: React.FC<TopbarProps> = ({
           ) : (
             <div className="flex items-center gap-2">
               <span className="text-base sm:text-lg font-bold text-slate-900">
-                Welcome, {user.name}!
+                Welcome, {displayName}!
               </span>
             </div>
           )}
@@ -58,9 +65,9 @@ export const Topbar: React.FC<TopbarProps> = ({
 
       {/* Right Controls */}
       <div className="flex items-center gap-2.5 sm:gap-4">
-        {/* Date badge matching reference */}
-        <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-100 text-slate-600 text-xs font-medium">
-          <Calendar className="w-3.5 h-3.5 text-slate-400" />
+        {/* Date badge */}
+        <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-100/90 text-slate-600 text-xs font-medium border border-slate-200/60 shadow-xs">
+          <Calendar className="w-3.5 h-3.5 text-indigo-500" />
           <span>{today}</span>
         </div>
 
@@ -84,10 +91,10 @@ export const Topbar: React.FC<TopbarProps> = ({
 
         {/* User preview */}
         <div className="flex items-center gap-2.5 pl-2 border-l border-slate-200">
-          <Avatar name={user.name} src={user.avatarUrl} size="sm" />
+          <Avatar name={displayName} src={user.avatarUrl} size="sm" />
           <div className="hidden lg:block text-left">
-            <p className="text-xs font-bold text-slate-800 leading-tight">{user.name}</p>
-            <p className="text-[10px] text-slate-400">{user.role}</p>
+            <p className="text-xs font-bold text-slate-800 leading-tight">{displayName}</p>
+            <p className="text-[10px] text-slate-400">{user.role || 'Candidate'}</p>
           </div>
         </div>
       </div>

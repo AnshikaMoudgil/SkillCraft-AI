@@ -58,6 +58,7 @@ class CandidateAnswerResponse(BaseModel):
     candidate_answer: str
     ai_response: str
     next_question: str
+    followUp: Optional[str] = None
     feedback: str
     conversation_id: str
     score: int

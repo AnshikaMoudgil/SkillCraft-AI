@@ -15,11 +15,15 @@ import {
   Layers
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { useToast } from '../../context/ToastContext';
 import { Avatar } from '../common/Avatar';
 
 export const Sidebar: React.FC = () => {
   const { user, logout } = useAuth();
+  const { showToast } = useToast();
   const navigate = useNavigate();
+
+  const displayName = user.name && user.name.trim() ? user.name : 'Candidate';
 
   const primaryNav = [
     { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -38,6 +42,7 @@ export const Sidebar: React.FC = () => {
 
   const handleLogout = () => {
     logout();
+    showToast('Signed out successfully', 'info');
     navigate('/login');
   };
 
@@ -111,14 +116,14 @@ export const Sidebar: React.FC = () => {
       {/* User profile footer matching reference */}
       <div className="p-4 border-t border-slate-800/80 bg-[#051428] flex items-center justify-between">
         <div className="flex items-center gap-3 min-w-0">
-          <Avatar name={user.name} src={user.avatarUrl} size="md" />
+          <Avatar name={displayName} src={user.avatarUrl} size="md" />
           <div className="min-w-0">
             <p className="text-sm font-semibold text-white truncate leading-tight">
-              {user.name}
+              {displayName}
             </p>
             <div className="flex items-center gap-1.5 mt-0.5">
               <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
-              <span className="text-xs text-slate-400 truncate">{user.role}</span>
+              <span className="text-xs text-slate-400 truncate">{user.role || 'Candidate'}</span>
             </div>
           </div>
         </div>

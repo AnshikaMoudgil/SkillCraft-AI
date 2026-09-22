@@ -5,26 +5,38 @@ import { ChevronRight, Calendar, Clock, Terminal, Video, Code } from 'lucide-rea
 import { apiClient } from '../../lib/apiClient';
 import { RecentInterview } from '../../types';
 
-export const RecentInterviews: React.FC = () => {
+export interface RecentInterviewsProps {
+  interviews?: RecentInterview[];
+  loading?: boolean;
+}
+
+export const RecentInterviews: React.FC<RecentInterviewsProps> = ({
+  interviews: propInterviews,
+  loading: propLoading
+}) => {
   const navigate = useNavigate();
-  const [interviews, setInterviews] = useState<RecentInterview[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [internalInterviews, setInternalInterviews] = useState<RecentInterview[]>([]);
+  const [internalLoading, setInternalLoading] = useState(true);
+
+  const interviews = propInterviews !== undefined ? propInterviews : internalInterviews;
+  const loading = propLoading !== undefined ? propLoading : internalLoading;
 
   useEffect(() => {
+    if (propInterviews !== undefined) return;
     const fetchInterviews = async () => {
       try {
         const data = await apiClient.get<RecentInterview[]>('/interview/recent');
         if (data) {
-          setInterviews(data);
+          setInternalInterviews(data);
         }
       } catch (err) {
         console.error("Failed to fetch recent interviews", err);
       } finally {
-        setLoading(false);
+        setInternalLoading(false);
       }
     };
     fetchInterviews();
-  }, []);
+  }, [propInterviews]);
 
   const getScoreBadgeColor = (score: number) => {
     if (score >= 80) return 'bg-emerald-50 text-emerald-700 border-emerald-200';
@@ -59,9 +71,29 @@ export const RecentInterviews: React.FC = () => {
 
       <div className="divide-y divide-slate-100">
         {loading ? (
-          <div className="py-4 text-sm text-slate-500 text-center animate-pulse">Loading recent interviews...</div>
+          <div className="py-8 text-sm text-slate-500 text-center animate-pulse flex flex-col items-center justify-center gap-2">
+            <div className="w-6 h-6 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin" />
+            <span>Loading recent interview sessions...</span>
+          </div>
         ) : interviews.length === 0 ? (
-          <div className="py-4 text-sm text-slate-500 text-center">No interviews completed yet.</div>
+          <div className="py-8 px-4 text-center flex flex-col items-center justify-center space-y-3">
+            <div className="w-12 h-12 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 shadow-xs">
+              <Terminal className="w-6 h-6" />
+            </div>
+            <div>
+              <p className="text-sm font-bold text-slate-800">No mock interviews completed yet</p>
+              <p className="text-xs text-slate-500 max-w-sm mt-1">
+                Take your first practice session to get AI-generated scorecards, Big-O complexity reports, and speech clarity analytics.
+              </p>
+            </div>
+            <button
+              onClick={() => navigate('/interviews')}
+              className="mt-2 inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-xs font-bold shadow-md shadow-indigo-500/20 hover:shadow-lg hover:from-indigo-700 hover:to-purple-700 transition-all cursor-pointer"
+            >
+              <span>Start First Interview</span>
+              <ChevronRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
         ) : (
           interviews.map((interview) => (
             <div

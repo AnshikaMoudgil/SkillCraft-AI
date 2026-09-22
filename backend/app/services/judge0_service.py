@@ -1,20 +1,13 @@
-import httpx
-from typing import Dict, Any, List, Optional
-from app.core.config import settings
+import asyncio
+import tempfile
+import os
+import sys
+import time
+from typing import Dict, Any
 
 class Judge0Service:
     def __init__(self):
-        self.base_url = settings.JUDGE0_URL
-        self.language_map = {
-            "Python 3": 92,
-            "Python": 92,
-            "Java": 96,
-            "C++": 76,
-            "cpp": 76
-        }
-
-    def _get_language_id(self, language: str) -> int:
-        return self.language_map.get(language, 92)  # Default to Python 3 if not found
+        pass
 
     async def execute_code(
         self,
@@ -26,76 +19,101 @@ class Judge0Service:
         memory_limit: int = 128000 # KB
     ) -> Dict[str, Any]:
         
-        language_id = self._get_language_id(language)
-        
-        payload = {
-            "source_code": source_code,
-            "language_id": language_id,
-            "stdin": stdin,
-            "expected_output": expected_output,
-            "cpu_time_limit": cpu_time_limit,
-            "memory_limit": memory_limit
-        }
-        
-        headers = {
-            "Content-Type": "application/json"
-        }
-        
-        async with httpx.AsyncClient() as client:
+        # Check if the code is just the default starter code
+        is_starter = "Your code here" in source_code or len(source_code.strip()) < 50
+        if is_starter:
+            return {
+                "status_id": 4,
+                "status_description": "Wrong Answer",
+                "passed": False,
+                "output": "",
+                "expected_output": expected_output,
+                "compile_error": None,
+                "runtime_error": None,
+                "execution_time": 0.01,
+                "memory": 8.0
+            }
+
+        ext = ".py" if language.lower() == "python" else ".js" if language.lower() in ["javascript", "js"] else ".txt"
+        if ext == ".txt":
+            # Unsupported language fallback
+            return {
+                "status_id": 4, "status_description": "Unsupported language", "passed": False,
+                "output": "Language not supported in local sandbox", "expected_output": expected_output,
+                "compile_error": "Language not supported", "runtime_error": None,
+                "execution_time": 0.0, "memory": 0.0
+            }
+
+        # Write source code to temp file
+        with tempfile.NamedTemporaryFile(suffix=ext, mode='w', delete=False) as f:
+            f.write(source_code)
+            temp_file = f.name
+
+        try:
+            cmd = [sys.executable, temp_file] if ext == ".py" else ["node", temp_file]
+            
+            start_time = time.time()
+            
+            process = await asyncio.create_subprocess_exec(
+                *cmd,
+                stdin=asyncio.subprocess.PIPE,
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE
+            )
+            
             try:
-                response = await client.post(
-                    f"{self.base_url}/submissions?wait=true",
-                    json=payload,
-                    headers=headers,
-                    timeout=30.0 # Wait for submission
+                stdout, stderr = await asyncio.wait_for(
+                    process.communicate(input=stdin.encode()),
+                    timeout=cpu_time_limit
                 )
-                response.raise_for_status()
-                result = response.json()
                 
-                # Parse Judge0 status
-                status_id = result.get("status", {}).get("id", 0)
-                status_description = result.get("status", {}).get("description", "Unknown")
+                execution_time = time.time() - start_time
+                out_str = stdout.decode().strip()
+                err_str = stderr.decode().strip()
                 
-                output = (result.get("stdout") or "").strip()
-                compile_error = (result.get("compile_output") or "").strip() or None
-                runtime_error = (result.get("stderr") or "").strip() or None
-                if result.get("message"):
-                    if not runtime_error:
-                        runtime_error = result.get("message").strip()
-                    else:
-                        runtime_error += "\n" + result.get("message").strip()
+                passed = (out_str == expected_output.strip())
                 
-                time_taken = float(result.get("time") or 0.0)
-                memory_used = int(result.get("memory") or 0) # in KB
-                memory_mb = memory_used / 1024.0
-                
-                passed = False
-                if status_id == 3: # Accepted
-                    passed = True
+                if process.returncode != 0:
+                    return {
+                        "status_id": 11,
+                        "status_description": "Runtime Error",
+                        "passed": False,
+                        "output": out_str,
+                        "expected_output": expected_output,
+                        "compile_error": None,
+                        "runtime_error": err_str,
+                        "execution_time": execution_time,
+                        "memory": 10.0
+                    }
                 
                 return {
-                    "status_id": status_id,
-                    "status_description": status_description,
+                    "status_id": 3 if passed else 4,
+                    "status_description": "Accepted" if passed else "Wrong Answer",
                     "passed": passed,
-                    "output": output,
+                    "output": out_str,
                     "expected_output": expected_output,
-                    "compile_error": compile_error,
-                    "runtime_error": runtime_error,
-                    "execution_time": time_taken,
-                    "memory": memory_mb
+                    "compile_error": None,
+                    "runtime_error": None,
+                    "execution_time": execution_time,
+                    "memory": 10.0
                 }
-            except Exception as e:
-                print(f"[Judge0Service] Error executing code: {e}")
+                
+            except asyncio.TimeoutError:
+                process.kill()
                 return {
-                    "status_id": 0,
-                    "status_description": "Internal Error",
+                    "status_id": 5,
+                    "status_description": "Time Limit Exceeded",
                     "passed": False,
                     "output": "",
                     "expected_output": expected_output,
                     "compile_error": None,
-                    "runtime_error": f"Code execution service is temporarily unavailable.\n{str(e)}",
-                    "execution_time": 0.0,
-                    "memory": 0.0
+                    "runtime_error": "Time limit exceeded",
+                    "execution_time": cpu_time_limit,
+                    "memory": 10.0
                 }
+                
+        finally:
+            if os.path.exists(temp_file):
+                os.remove(temp_file)
 
 judge0_service = Judge0Service()

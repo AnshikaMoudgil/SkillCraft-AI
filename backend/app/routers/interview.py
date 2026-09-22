@@ -188,6 +188,7 @@ async def respond_to_candidate(
         candidate_answer=req.answer,
         ai_response=ai_response_text,
         next_question=followup_text,
+        followUp=followup_text,
         feedback=feedback_text,
         conversation_id=returned_conv_id or "",
         score=evaluation.get("score", 85),
@@ -341,12 +342,16 @@ async def get_user_analytics(
     else:
         trend = [{"date": "Start", "score": 0}]
 
+    scores = [iv.get("score", 0) for iv in interviews if iv.get("score") is not None]
+    avg_score = round(sum(scores) / len(scores)) if scores else 0
+    score_change = (scores[0] - scores[-1]) if len(scores) >= 2 else 0
+
     stats = {
-        "overallScore": profile.get("overall_score", 0),
-        "scoreImprovement": profile.get("scoreChange", 0),
-        "interviewsCompleted": profile.get("interviewsCompleted", 0) or len(interviews),
-        "learningStreak": profile.get("codingStreak", 0),
-        "aiInsight": "Consistent practice leads to improvement. Focus on your weaker areas next."
+        "overallScore": avg_score,
+        "scoreImprovement": score_change,
+        "interviewsCompleted": len(interviews),
+        "learningStreak": min(len(interviews), 7),
+        "aiInsight": "Consistent practice leads to improvement. Focus on your weaker areas next." if interviews else "Take your first mock interview to generate personalized AI performance insights."
     }
 
     # Basic skill breakdown based on profile skills (default to 50 if no specific scores)

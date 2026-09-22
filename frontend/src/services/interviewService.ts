@@ -90,5 +90,12 @@ export const interviewService = {
    */
   async getInterviewTranscripts(sessionId: string): Promise<any[]> {
     return await apiClient.get(`/interview/transcript/${sessionId}`);
+  },
+
+  /**
+   * Fetch recent interviews
+   */
+  async getRecentInterviews(): Promise<any[]> {
+    return await apiClient.get('/interview/recent');
   }
 };

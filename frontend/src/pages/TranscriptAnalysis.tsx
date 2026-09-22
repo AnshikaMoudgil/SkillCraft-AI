@@ -18,32 +18,49 @@ import {
   CheckCircle2,
   AlertTriangle
 } from 'lucide-react';
+
 export const TranscriptAnalysis: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'transcript' | 'analysis'>('transcript');
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { showToast } = useToast();
   
   const [transcripts, setTranscripts] = React.useState<any[]>([]);
   const [reportData, setReportData] = React.useState<any>(null);
+  const [recentSessions, setRecentSessions] = React.useState<any[]>([]);
+  const [hasNoInterviews, setHasNoInterviews] = React.useState(false);
   const [isLoading, setIsLoading] = React.useState(true);
   
-  const sessionId = searchParams.get('session');
+  const paramSessionId = searchParams.get('session') || searchParams.get('sessionId');
 
   React.useEffect(() => {
-    if (!sessionId) {
-      navigate('/dashboard');
-      return;
-    }
-    
     const fetchData = async () => {
+      setIsLoading(true);
       try {
-        const [tData, rData] = await Promise.all([
-          interviewService.getInterviewTranscripts(sessionId),
-          interviewService.getInterviewReport(sessionId)
-        ]);
-        setTranscripts(tData);
-        setReportData(rData);
+        let activeId = paramSessionId;
+        const recent = await interviewService.getRecentInterviews();
+        setRecentSessions(recent || []);
+
+        if (!activeId) {
+          if (recent && recent.length > 0 && recent[0].id) {
+            activeId = recent[0].id;
+            setSearchParams({ session: recent[0].id }, { replace: true });
+          } else {
+            setHasNoInterviews(true);
+            setIsLoading(false);
+            return;
+          }
+        }
+
+        if (activeId) {
+          const [tData, rData] = await Promise.all([
+            interviewService.getInterviewTranscripts(activeId).catch(() => []),
+            interviewService.getInterviewReport(activeId).catch(() => null)
+          ]);
+          setTranscripts(tData || []);
+          setReportData(rData);
+          setHasNoInterviews(false);
+        }
       } catch (e) {
         showToast('Error loading transcripts', 'error');
       } finally {
@@ -51,7 +68,7 @@ export const TranscriptAnalysis: React.FC = () => {
       }
     };
     fetchData();
-  }, [sessionId, navigate, showToast]);
+  }, [paramSessionId, setSearchParams, showToast]);
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -67,7 +84,49 @@ export const TranscriptAnalysis: React.FC = () => {
   if (isLoading) {
     return (
       <PageContainer title="Interview Transcript">
-        <div className="flex justify-center items-center h-64">Loading transcripts...</div>
+        <div className="flex justify-center items-center h-64 text-slate-500 animate-pulse">
+          Loading transcripts...
+        </div>
+      </PageContainer>
+    );
+  }
+
+  if (hasNoInterviews || (!reportData && transcripts.length === 0)) {
+    return (
+      <PageContainer
+        title="Interview Transcript & AI"
+        subtitle="Complete conversation transcript & communication metrics."
+      >
+        <div className="max-w-3xl mx-auto py-8">
+          <Card className="p-8 sm:p-12 text-center border border-slate-200/80 bg-white shadow-sm flex flex-col items-center">
+            <div className="w-16 h-16 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center mb-5 shadow-inner">
+              <FileText className="w-8 h-8" />
+            </div>
+            <h3 className="text-xl font-bold text-slate-900 mb-2">
+              No Interview Transcripts Recorded Yet
+            </h3>
+            <p className="text-sm text-slate-500 max-w-md mx-auto mb-8 leading-relaxed">
+              Real-time dialogue records, question-answer breakdowns, and speech cadence indicators will be automatically logged during your mock interviews.
+            </p>
+            <div className="flex flex-col sm:flex-row items-center gap-3">
+              <Button
+                variant="gradient"
+                size="md"
+                onClick={() => navigate('/interviews')}
+                icon={<ArrowRight className="w-4 h-4" />}
+              >
+                Start Mock Interview
+              </Button>
+              <Button
+                variant="outline"
+                size="md"
+                onClick={() => navigate('/interview/voice')}
+              >
+                Try Voice Interview
+              </Button>
+            </div>
+          </Card>
+        </div>
       </PageContainer>
     );
   }
@@ -78,9 +137,9 @@ export const TranscriptAnalysis: React.FC = () => {
   const computedFillerWords = fillerWordsList.map(word => {
     let count = 0;
     transcripts.forEach(t => {
-      if (t.role === 'user') {
+      if (t.role === 'user' || t.sender === 'user') {
         const regex = new RegExp(`\\b${word}\\b`, 'gi');
-        const matches = t.text.match(regex);
+        const matches = (t.text || '').match(regex);
         if (matches) count += matches.length;
       }
     });
@@ -120,14 +179,30 @@ export const TranscriptAnalysis: React.FC = () => {
             </button>
           </div>
 
-          <Button
-            variant="gradient"
-            size="md"
-            onClick={() => navigate(`/interview/report?session=${sessionId}`)}
-            icon={<ArrowRight className="w-4 h-4" />}
-          >
-            View Full Score Report
-          </Button>
+          <div className="flex items-center gap-3">
+            {recentSessions.length > 1 && (
+              <select
+                value={paramSessionId || reportData?.id || ''}
+                onChange={(e) => setSearchParams({ session: e.target.value })}
+                className="text-xs bg-white border border-slate-200 rounded-xl px-3 py-2 text-slate-700 font-medium focus:ring-1 focus:ring-indigo-500 shadow-sm"
+              >
+                {recentSessions.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.title} ({s.date || 'Recent'})
+                  </option>
+                ))}
+              </select>
+            )}
+
+            <Button
+              variant="gradient"
+              size="md"
+              onClick={() => navigate(`/interview/report?session=${paramSessionId || reportData?.id || ''}`)}
+              icon={<ArrowRight className="w-4 h-4" />}
+            >
+              View Full Score Report
+            </Button>
+          </div>
         </div>
 
         {/* Main Grid: Transcript Timeline (Left) + Communication Analysis (Right) */}
@@ -212,22 +287,26 @@ export const TranscriptAnalysis: React.FC = () => {
                 ))}
               </div>
 
-              {/* Detected Fillers Breakdown matching reference Screen 9 */}
+              {/* Detected Fillers Breakdown */}
               <div className="pt-4 border-t border-slate-100">
                 <h4 className="text-xs font-bold text-slate-800 mb-3">
                   Detected Fillers
                 </h4>
-                <div className="grid grid-cols-3 gap-2">
-                  {mockFillerWords.map((f) => (
-                    <div
-                      key={f.word}
-                      className="p-2.5 rounded-xl bg-slate-50 border border-slate-200/70 text-center"
-                    >
-                      <p className="font-mono text-sm font-bold text-indigo-700">{f.word}</p>
-                      <p className="text-xs text-slate-400 mt-0.5">{f.count} times</p>
-                    </div>
-                  ))}
-                </div>
+                {computedFillerWords.length > 0 ? (
+                  <div className="grid grid-cols-3 gap-2">
+                    {computedFillerWords.map((f) => (
+                      <div
+                        key={f.word}
+                        className="p-2.5 rounded-xl bg-slate-50 border border-slate-200/70 text-center"
+                      >
+                        <p className="font-mono text-sm font-bold text-indigo-700">{f.word}</p>
+                        <p className="text-xs text-slate-400 mt-0.5">{f.count} times</p>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-xs text-slate-400 italic">No repetitive filler words detected.</p>
+                )}
               </div>
 
               {/* Communication Indicators Note */}

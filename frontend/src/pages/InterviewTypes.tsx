@@ -84,7 +84,7 @@ export const InterviewTypes: React.FC = () => {
               <Card
                 key={type.id}
                 onClick={() => navigate(type.targetPath, { state: { type: type.id, title: type.title } })}
-                className={`p-6 sm:p-7 flex flex-col justify-between cursor-pointer border border-slate-200/80 hover:shadow-xl transition-all duration-300 group ${type.borderHover}`}
+                className={`p-6 sm:p-7 flex flex-col justify-between cursor-pointer border border-slate-200/80 card-hover-lift bg-white rounded-3xl group ${type.borderHover}`}
               >
                 <div>
                   <div className="flex items-center justify-between mb-4">

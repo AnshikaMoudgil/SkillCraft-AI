@@ -55,10 +55,10 @@ export const AiRecommendationCard: React.FC = () => {
             <Button
               variant="gradient"
               size="md"
-              onClick={() => navigate('/learning')}
+              onClick={() => navigate(user.interviewsCompleted === 0 ? '/interviews' : '/learning')}
               icon={<ArrowRight className="w-4 h-4" />}
             >
-              Start Recommended Practice
+              {user.interviewsCompleted === 0 ? 'Choose Interview Mode' : 'Start Recommended Practice'}
             </Button>
           </div>
         </div>

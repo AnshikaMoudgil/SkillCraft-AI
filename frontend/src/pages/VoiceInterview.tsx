@@ -21,16 +21,18 @@ import {
   Type
 } from 'lucide-react';
 
-export enum InterviewState {
-  INITIALIZING = 'INITIALIZING',
-  AI_THINKING = 'AI_THINKING',
-  AI_SPEAKING = 'AI_SPEAKING',
-  WAITING_FOR_CANDIDATE = 'WAITING_FOR_CANDIDATE',
-  LISTENING = 'LISTENING',
-  SUBMITTING = 'SUBMITTING',
-  COMPLETED = 'COMPLETED',
-  ERROR = 'ERROR'
-}
+export const InterviewState = {
+  INITIALIZING: 'INITIALIZING',
+  AI_THINKING: 'AI_THINKING',
+  AI_SPEAKING: 'AI_SPEAKING',
+  WAITING_FOR_CANDIDATE: 'WAITING_FOR_CANDIDATE',
+  LISTENING: 'LISTENING',
+  SUBMITTING: 'SUBMITTING',
+  COMPLETED: 'COMPLETED',
+  ERROR: 'ERROR'
+} as const;
+
+export type InterviewState = typeof InterviewState[keyof typeof InterviewState];
 
 let globalLastSpokenText: string | null = null;
 

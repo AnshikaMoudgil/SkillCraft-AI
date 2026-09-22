@@ -33,16 +33,20 @@ class SupabaseService:
             except Exception as e:
                 print(f"[SupabaseService] get_profile error: {e}")
 
+        user_interviews = [iv for iv in self._mock_interviews.values() if iv.get("user_id") == user_id]
+        scores = [iv.get("score", 0) for iv in user_interviews if iv.get("score")]
+        avg_score = round(sum(scores) / len(scores)) if scores else 0
+
         return self._mock_profiles.get(user_id, {
             "id": user_id,
-            "name": "Alex Morgan",
-            "role": "Full Stack Developer",
-            "overallScore": 84,
-            "scoreChange": 6,
-            "interviewsCompleted": 12,
-            "codingStreak": 7,
-            "skills": ["React", "TypeScript", "Node.js", "Python", "System Design"],
-            "email": "alex.morgan@example.com"
+            "name": "Candidate",
+            "role": "Candidate",
+            "overallScore": avg_score,
+            "scoreChange": 0,
+            "interviewsCompleted": len(user_interviews),
+            "codingStreak": len(user_interviews),
+            "skills": ["Algorithms", "Data Structures", "System Design"],
+            "email": "candidate@skillcraft.ai"
         })
 
     async def update_profile(self, user_id: str, updates: Dict[str, Any]) -> Dict[str, Any]:

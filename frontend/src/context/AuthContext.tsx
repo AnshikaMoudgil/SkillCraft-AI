@@ -4,7 +4,7 @@ import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { apiClient } from '../lib/apiClient';
 
 const defaultUser: UserProfile = {
-  name: 'User',
+  name: 'Candidate',
   role: 'Candidate',
   email: '',
   interviewsCompleted: 0,
@@ -14,6 +14,28 @@ const defaultUser: UserProfile = {
   skills: []
 };
 
+const sanitizeStoredUser = (saved: string | null): UserProfile => {
+  if (!saved) return defaultUser;
+  try {
+    const parsed = JSON.parse(saved);
+    // If the saved user has old mock data (78 score, 3 interviews, 5 streak, or "Student" role, or unsplash avatar)
+    const isOldMock = (parsed.overallScore === 78 && parsed.interviewsCompleted === 3) || parsed.role === 'Student';
+    return {
+      name: parsed.name && parsed.name !== 'Devansh Sharma' ? parsed.name : defaultUser.name,
+      role: parsed.role && parsed.role !== 'Student' ? parsed.role : 'Candidate',
+      email: parsed.email && parsed.email !== 'devansh.sharma@example.com' ? parsed.email : defaultUser.email,
+      interviewsCompleted: isOldMock ? 0 : (parsed.interviewsCompleted || 0),
+      overallScore: isOldMock ? 0 : (parsed.overallScore || 0),
+      scoreChange: isOldMock ? 0 : (parsed.scoreChange || 0),
+      codingStreak: isOldMock ? 0 : (parsed.codingStreak || 0),
+      skills: parsed.skills || [],
+      avatarUrl: parsed.avatarUrl && !parsed.avatarUrl.includes('unsplash.com') ? parsed.avatarUrl : undefined
+    };
+  } catch {
+    return defaultUser;
+  }
+};
+
 interface AuthContextType {
   user: UserProfile;
   isAuthenticated: boolean;
@@ -21,6 +43,7 @@ interface AuthContextType {
   signup: (name: string, email: string, pass: string) => Promise<boolean> | boolean;
   logout: () => Promise<void> | void;
   updateUserScore: (newScore: number) => void;
+  syncUserStats: (stats: { overallScore?: number; interviewsCompleted?: number; scoreChange?: number; codingStreak?: number }) => void;
   isSupabaseActive: boolean;
 }
 
@@ -33,14 +56,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<UserProfile>(() => {
     try {
       const saved = localStorage.getItem(USER_STORAGE_KEY);
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        return { ...defaultUser, ...parsed };
-      }
+      return sanitizeStoredUser(saved);
     } catch {
-      // ignore
+      return defaultUser;
     }
-    return defaultUser;
   });
 
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
@@ -52,7 +71,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch {
       // ignore
     }
-    return true;
+    return false;
   });
 
   // Supabase Auth session listener
@@ -112,7 +131,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [isAuthenticated]);
 
+  const deriveDisplayName = (emailStr: string, explicitName?: string): string => {
+    if (explicitName && explicitName.trim()) {
+      return explicitName.trim();
+    }
+    if (!emailStr) return 'Candidate';
+    const prefix = emailStr.split('@')[0];
+    const formatted = prefix
+      .replace(/[._-]+/g, ' ')
+      .split(' ')
+      .filter(Boolean)
+      .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+      .join(' ');
+    return formatted || 'Candidate';
+  };
+
   const login = async (email: string, pass: string, name?: string): Promise<boolean> => {
+    const displayName = deriveDisplayName(email, name);
     if (isSupabaseConfigured && supabase) {
       try {
         const { data, error } = await supabase.auth.signInWithPassword({
@@ -126,7 +161,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setUser((prev) => ({
             ...prev,
             email,
-            name: name && name.trim() ? name.trim() : (data.user.user_metadata?.name || prev.name),
+            name: data.user.user_metadata?.name || displayName,
           }));
           return true;
         }
@@ -138,11 +173,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     // Local / Dev mode fallback
     if (email && pass) {
-      setUser((prev) => ({
-        ...prev,
-        email,
-        name: name && name.trim() ? name.trim() : prev.name,
-      }));
+      setUser((prev) => {
+        const isOldMock = (prev.overallScore === 78 && prev.interviewsCompleted === 3) || prev.role === 'Student';
+        return {
+          ...defaultUser,
+          email: email.trim(),
+          name: displayName,
+          role: 'Candidate',
+          interviewsCompleted: isOldMock ? 0 : (prev.interviewsCompleted || 0),
+          overallScore: isOldMock ? 0 : (prev.overallScore || 0),
+          scoreChange: isOldMock ? 0 : (prev.scoreChange || 0),
+          codingStreak: isOldMock ? 0 : (prev.codingStreak || 0),
+        };
+      });
       setIsAuthenticated(true);
       return true;
     }
@@ -150,24 +193,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const signup = async (name: string, email: string, pass: string): Promise<boolean> => {
+    const displayName = deriveDisplayName(email, name);
     if (isSupabaseConfigured && supabase) {
       try {
         const { data, error } = await supabase.auth.signUp({
           email,
           password: pass,
           options: {
-            data: { name: name.trim() },
+            data: { name: displayName },
           },
         });
         if (error) throw error;
 
         if (data.user) {
           setIsAuthenticated(true);
-          setUser((prev) => ({
-            ...prev,
-            name: name.trim(),
+          setUser({
+            ...defaultUser,
+            name: displayName,
             email: email.trim(),
-          }));
+            role: 'Candidate',
+            interviewsCompleted: 0,
+            overallScore: 0,
+            scoreChange: 0,
+            codingStreak: 0,
+          });
           return true;
         }
       } catch (err) {
@@ -178,11 +227,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     // Local / Dev mode fallback
     if (name && email && pass) {
-      setUser((prev) => ({
-        ...prev,
-        name: name.trim(),
+      setUser({
+        ...defaultUser,
+        name: displayName,
         email: email.trim(),
-      }));
+        role: 'Candidate',
+        interviewsCompleted: 0,
+        overallScore: 0,
+        scoreChange: 0,
+        codingStreak: 0,
+      });
       setIsAuthenticated(true);
       return true;
     }
@@ -198,6 +252,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     }
     setIsAuthenticated(false);
+    setUser(defaultUser);
+    try {
+      localStorage.removeItem(USER_STORAGE_KEY);
+      localStorage.removeItem(AUTH_STORAGE_KEY);
+    } catch {
+      // ignore
+    }
   };
 
   const updateUserScore = (newScore: number) => {
@@ -205,6 +266,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       ...prev,
       overallScore: newScore,
       interviewsCompleted: prev.interviewsCompleted + 1,
+    }));
+  };
+
+  const syncUserStats = (stats: { overallScore?: number; interviewsCompleted?: number; scoreChange?: number; codingStreak?: number }) => {
+    setUser((prev) => ({
+      ...prev,
+      ...stats
     }));
   };
 
@@ -217,6 +285,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         signup,
         logout,
         updateUserScore,
+        syncUserStats,
         isSupabaseActive: isSupabaseConfigured,
       }}
     >

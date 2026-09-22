@@ -21,32 +21,51 @@ import {
 
 export const InterviewReport: React.FC = () => {
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { showToast } = useToast();
   
   const [reportData, setReportData] = React.useState<any>(null);
+  const [recentSessions, setRecentSessions] = React.useState<any[]>([]);
+  const [hasNoInterviews, setHasNoInterviews] = React.useState(false);
   const [isLoading, setIsLoading] = React.useState(true);
   
-  const sessionId = searchParams.get('sessionId') || searchParams.get('session');
+  const paramSessionId = searchParams.get('sessionId') || searchParams.get('session');
 
   React.useEffect(() => {
-    if (!sessionId) {
-      navigate('/dashboard');
-      return;
-    }
-    
-    const fetchReport = async () => {
+    const loadReportData = async () => {
+      setIsLoading(true);
       try {
-        const data = await interviewService.getInterviewReport(sessionId);
-        setReportData(data);
+        let activeId = paramSessionId;
+
+        // If no sessionId in URL, fetch user's recent interviews
+        const recent = await interviewService.getRecentInterviews();
+        setRecentSessions(recent || []);
+
+        if (!activeId) {
+          if (recent && recent.length > 0 && recent[0].id) {
+            activeId = recent[0].id;
+            setSearchParams({ session: recent[0].id }, { replace: true });
+          } else {
+            setHasNoInterviews(true);
+            setIsLoading(false);
+            return;
+          }
+        }
+
+        if (activeId) {
+          const data = await interviewService.getInterviewReport(activeId);
+          setReportData(data);
+          setHasNoInterviews(false);
+        }
       } catch (e) {
-        showToast('Error loading report', 'error');
+        showToast('Error loading interview report', 'error');
       } finally {
         setIsLoading(false);
       }
     };
-    fetchReport();
-  }, [sessionId, navigate, showToast]);
+
+    loadReportData();
+  }, [paramSessionId, setSearchParams, showToast]);
 
   const handleDownloadPdf = () => {
     showToast('Downloading official PDF performance report...', 'success');
@@ -55,12 +74,52 @@ export const InterviewReport: React.FC = () => {
   if (isLoading) {
     return (
       <PageContainer title="Interview Report">
-        <div className="flex justify-center items-center h-64">Loading report...</div>
+        <div className="flex justify-center items-center h-64 text-slate-500 animate-pulse">
+          Loading report...
+        </div>
       </PageContainer>
     );
   }
 
-  if (!reportData) return null;
+  if (hasNoInterviews || !reportData) {
+    return (
+      <PageContainer
+        title="Interview Report"
+        subtitle="Comprehensive AI assessment, Big-O metrics, and personalized learning recommendations."
+      >
+        <div className="max-w-3xl mx-auto py-8">
+          <Card className="p-8 sm:p-12 text-center border border-slate-200/80 bg-white shadow-sm flex flex-col items-center">
+            <div className="w-16 h-16 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center mb-5 shadow-inner">
+              <Award className="w-8 h-8" />
+            </div>
+            <h3 className="text-xl font-bold text-slate-900 mb-2">
+              No Interview Reports Generated Yet
+            </h3>
+            <p className="text-sm text-slate-500 max-w-md mx-auto mb-8 leading-relaxed">
+              Complete your first AI mock or voice interview to generate an in-depth scorecard with communication metrics, technical accuracy, and tailored preparation plans.
+            </p>
+            <div className="flex flex-col sm:flex-row items-center gap-3">
+              <Button
+                variant="gradient"
+                size="md"
+                onClick={() => navigate('/interviews')}
+                icon={<ArrowRight className="w-4 h-4" />}
+              >
+                Start Mock Interview
+              </Button>
+              <Button
+                variant="outline"
+                size="md"
+                onClick={() => navigate('/interview/voice')}
+              >
+                Try Voice Interview
+              </Button>
+            </div>
+          </Card>
+        </div>
+      </PageContainer>
+    );
+  }
 
   const dateStr = new Date(reportData.created_at || new Date()).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   const metrics = reportData.communication_metrics || [];
@@ -92,14 +151,30 @@ export const InterviewReport: React.FC = () => {
             </span>
           </div>
 
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleDownloadPdf}
-            icon={<Download className="w-4 h-4 text-indigo-600" />}
-          >
-            Download PDF
-          </Button>
+          <div className="flex items-center gap-3">
+            {recentSessions.length > 1 && (
+              <select
+                value={paramSessionId || reportData.id || ''}
+                onChange={(e) => setSearchParams({ session: e.target.value })}
+                className="text-xs bg-white border border-slate-200 rounded-xl px-3 py-1.5 text-slate-700 font-medium focus:ring-1 focus:ring-indigo-500 shadow-sm"
+              >
+                {recentSessions.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.title} ({s.date || 'Recent'}) - Score: {s.score}%
+                  </option>
+                ))}
+              </select>
+            )}
+
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleDownloadPdf}
+              icon={<Download className="w-4 h-4 text-indigo-600" />}
+            >
+              Download PDF
+            </Button>
+          </div>
         </div>
 
         {/* Scores & Skill Breakdown Row matching reference Screen 10 */}
