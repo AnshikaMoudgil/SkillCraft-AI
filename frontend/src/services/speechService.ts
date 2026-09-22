@@ -78,26 +78,57 @@ export const speechService = {
         body: JSON.stringify({ text }),
       });
 
-      if (response.ok && response.headers.get('content-type')?.includes('audio')) {
+      console.log(`[VoiceDebug] Azure response status: ${response.status}, ok: ${response.ok}`);
+      const contentType = response.headers.get('content-type');
+      console.log(`[VoiceDebug] Azure content-type: ${contentType}`);
+
+      if (response.ok && contentType?.includes('audio')) {
         const audioBlob = await response.blob();
+        console.log(`[VoiceDebug] Blob created, size: ${audioBlob.size}`);
         const audioUrl = URL.createObjectURL(audioBlob);
         const audio = new Audio(audioUrl);
-        await audio.play();
-        return true;
+        
+        try {
+          await audio.play();
+          console.log("[VoiceDebug] audio.play() succeeded!");
+          return true;
+        } catch (playError) {
+          console.error("[VoiceDebug] audio.play() failed with error:", playError);
+          // Don't fall back to native if it's an autoplay policy issue, because native will also fail/hang
+          return true; 
+        }
+      } else {
+        console.warn(`[VoiceDebug] Azure endpoint didn't return audio. Response text: ${await response.text().catch(() => 'none')}`);
       }
     } catch (e) {
-      console.warn('[speechService] Azure voice endpoint fallback to Web Speech:', e);
+      console.error('[VoiceDebug] Azure voice endpoint fetch exception:', e);
     }
 
     // 2. Browser native SpeechSynthesis fallback
+    console.log("[VoiceDebug] Attempting native Web Speech API fallback...");
     if ('speechSynthesis' in window) {
       return new Promise((resolve) => {
         window.speechSynthesis.cancel();
         const utterance = new SpeechSynthesisUtterance(text);
         utterance.rate = 1.0;
         utterance.pitch = 1.0;
-        utterance.onend = () => resolve(true);
-        utterance.onerror = () => resolve(false);
+        
+        // Timeout to prevent hanging if onend doesn't fire
+        const fallbackTimeout = setTimeout(() => {
+           console.warn("[VoiceDebug] Native TTS timed out (onend didn't fire).");
+           resolve(true);
+        }, 10000);
+
+        utterance.onend = () => {
+          clearTimeout(fallbackTimeout);
+          console.log("[VoiceDebug] Native TTS completed.");
+          resolve(true);
+        };
+        utterance.onerror = (e) => {
+          clearTimeout(fallbackTimeout);
+          console.error("[VoiceDebug] Native TTS error:", e);
+          resolve(false);
+        };
         window.speechSynthesis.speak(utterance);
       });
     }

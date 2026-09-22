@@ -159,7 +159,9 @@ export const VoiceInterview: React.FC = () => {
       };
 
       recognizer.sessionStopped = (s, e) => {
-        stopMic(false);
+        // Auto-submit if the user was quiet for a while but had already spoken something
+        const hasText = textAnswerRef.current.trim().length > 0;
+        stopMic(hasText);
       };
 
       recognizer.startContinuousRecognitionAsync(
@@ -183,22 +185,31 @@ export const VoiceInterview: React.FC = () => {
   const stopMic = (shouldSubmit: boolean = true) => {
     const recognizer = recognizerRef.current;
     if (recognizer) {
-      recognizer.stopContinuousRecognitionAsync(
-        () => {
-          recognizer.close();
-          recognizerRef.current = null;
-          if (shouldSubmit) handleFinalSubmission();
-          else {
-              setInterimTranscript('');
-              setInterviewState(InterviewState.WAITING_FOR_CANDIDATE);
+      try {
+        recognizer.stopContinuousRecognitionAsync(
+          () => {
+            recognizer.close();
+            recognizerRef.current = null;
+            if (shouldSubmit) handleFinalSubmission();
+            else {
+                setInterimTranscript('');
+                setInterviewState(InterviewState.WAITING_FOR_CANDIDATE);
+            }
+          },
+          (err) => {
+            recognizer.close();
+            recognizerRef.current = null;
+            // Even if stopping throws an error, we should still try to submit if requested
+            if (shouldSubmit) handleFinalSubmission();
+            else setInterviewState(InterviewState.WAITING_FOR_CANDIDATE);
           }
-        },
-        (err) => {
-          recognizer.close();
-          recognizerRef.current = null;
-          setInterviewState(InterviewState.WAITING_FOR_CANDIDATE);
-        }
-      );
+        );
+      } catch (e) {
+        recognizer.close();
+        recognizerRef.current = null;
+        if (shouldSubmit) handleFinalSubmission();
+        else setInterviewState(InterviewState.WAITING_FOR_CANDIDATE);
+      }
     } else {
       if (shouldSubmit) handleFinalSubmission();
       else setInterviewState(InterviewState.WAITING_FOR_CANDIDATE);

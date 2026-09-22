@@ -59,10 +59,12 @@ class SpeechService:
                 token_data = await self.get_speech_token()
                 token = token_data.get("token")
                 tts_url = f"https://{settings.AZURE_SPEECH_REGION}.tts.speech.microsoft.com/cognitiveservices/v1"
+                import html
+                escaped_text = html.escape(text)
                 ssml = (
                     f"<speak version='1.0' xml:lang='en-US'>"
                     f"<voice xml:lang='en-US' name='{settings.AZURE_SPEECH_VOICE_NAME}'>"
-                    f"{text}"
+                    f"{escaped_text}"
                     f"</voice></speak>"
                 )
                 headers = {

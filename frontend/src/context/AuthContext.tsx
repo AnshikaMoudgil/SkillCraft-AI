@@ -149,25 +149,32 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const login = async (email: string, pass: string, name?: string): Promise<boolean> => {
     const displayName = deriveDisplayName(email, name);
     if (isSupabaseConfigured && supabase) {
-      try {
-        const { data, error } = await supabase.auth.signInWithPassword({
-          email,
-          password: pass,
-        });
-        if (error) throw error;
-
-        if (data.user) {
-          setIsAuthenticated(true);
-          setUser((prev) => ({
-            ...prev,
+      if (email === 'demo@skillcraft.ai' && pass === 'demo123') {
+        // Bypass Supabase for demo credentials, let it fall through to local dev fallback
+      } else {
+        try {
+          const { data, error } = await supabase.auth.signInWithPassword({
             email,
-            name: data.user.user_metadata?.name || displayName,
-          }));
-          return true;
+            password: pass,
+          });
+          if (error) throw error;
+
+          if (data.user) {
+            setIsAuthenticated(true);
+            setUser((prev) => ({
+              ...prev,
+              email,
+              name: data.user.user_metadata?.name || displayName,
+            }));
+            return true;
+          }
+        } catch (err: any) {
+          console.warn('[Supabase Auth] Login error:', err);
+          if (err.message === 'Email not confirmed') {
+            throw new Error('Please check your inbox and confirm your email address to log in.');
+          }
+          throw err;
         }
-      } catch (err) {
-        console.warn('[Supabase Auth] Login error:', err);
-        return false;
       }
     }
 
@@ -219,9 +226,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           });
           return true;
         }
-      } catch (err) {
+      } catch (err: any) {
         console.warn('[Supabase Auth] Signup error:', err);
-        return false;
+        const errMsg = err.message?.toLowerCase() || '';
+        if (errMsg.includes('rate limit') || errMsg.includes('already registered') || errMsg.includes('already exists')) {
+          console.log('[Supabase Auth] Attempting auto-login as fallback...');
+          try {
+            return await login(email, pass, name);
+          } catch (loginErr) {
+            throw loginErr;
+          }
+        }
+        if (errMsg.includes('email signups are disabled')) {
+          throw new Error('Email signups are currently disabled in your Supabase project. Please enable the Email provider in your Supabase Dashboard (Authentication -> Providers -> Email).');
+        }
+        throw err;
       }
     }
 

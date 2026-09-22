@@ -247,6 +247,41 @@ class FoundryAgentService:
         reply, _ = await self._send_to_agent(prompt)
         return reply.strip()
 
+    async def explain_error(self, problem_title: str, code: str, language: str, error_msg: str) -> str:
+        prompt = (
+            f"The user is solving '{problem_title}' in {language} and encountered the following execution error:\n"
+            f"```\n{error_msg}\n```\n"
+            f"Here is their code:\n"
+            f"```\n{code}\n```\n"
+            f"Explain clearly what this error means and give a subtle hint on how to fix it without writing the code for them."
+        )
+        reply, _ = await self._send_to_agent(prompt)
+        return reply.strip()
+
+    async def evaluate_test_cases(self, problem_title: str, code: str, language: str, test_cases: list) -> Dict[str, Any]:
+        prompt = (
+            f"You are a strict code execution engine. Simulate the execution of this {language} code for the problem '{problem_title}'.\n"
+            f"Code:\n```\n{code}\n```\n\n"
+            f"Here are the test cases:\n"
+            f"{json.dumps(test_cases, indent=2)}\n\n"
+            f"Evaluate if the code correctly solves the problem for EACH test case. Check for syntax errors, logic errors, and return EXACTLY this JSON format:\n"
+            f"{{\n"
+            f'  "passed": true/false,\n'
+            f'  "passedTests": 2,\n'
+            f'  "totalTests": 3,\n'
+            f'  "runtimeMs": 15.5,\n'
+            f'  "memoryMb": 10.2,\n'
+            f'  "compileError": null or "error string if it fails to compile",\n'
+            f'  "runtimeError": null or "error string if it throws an exception",\n'
+            f'  "results": [\n'
+            f'    {{"id": 1, "input": "...", "expected": "...", "actual": "actual output produced by code", "status": "passed" | "failed"}}\n'
+            f'  ]\n'
+            f"}}\n"
+            f"Do not include markdown blocks, just raw JSON."
+        )
+        reply, _ = await self._send_to_agent(prompt)
+        return self._extract_json(reply)
+
     async def review_code(self, problem_title: str, code: str, language: str = "javascript") -> Dict[str, str]:
         prompt = (
             f"Review this {language} code for '{problem_title}':\n```\n{code}\n```\n"
@@ -262,6 +297,38 @@ class FoundryAgentService:
         )
         reply, _ = await self._send_to_agent(prompt)
         return self._extract_json(reply)
+
+    async def analyze_resume_structure(self, extracted_text: str) -> 'app.models.resume.ResumeAnalysis':
+        prompt = (
+            f"You are an expert AI recruiter parsing a candidate's resume.\n"
+            f"Extract the relevant information from the following raw text obtained from the resume.\n\n"
+            f"Raw Resume Text:\n```\n{extracted_text}\n```\n\n"
+            f"Rules:\n"
+            f"- Never invent or hallucinate any information. Use ONLY what is present in the text.\n"
+            f"- If a section is missing, leave it as an empty list or string.\n"
+            f"- Extract a structured JSON matching this exact format:\n"
+            f"{{\n"
+            f'  "name": "...",\n'
+            f'  "education": ["..."],\n'
+            f'  "skills": ["..."],\n'
+            f'  "programming_languages": ["..."],\n'
+            f'  "frameworks": ["..."],\n'
+            f'  "tools": ["..."],\n'
+            f'  "experience": [ {{"role": "...", "company": "...", "duration": "...", "description": "..."}} ],\n'
+            f'  "projects": [ {{"title": "...", "description": "...", "techStack": ["..."]}} ],\n'
+            f'  "certifications": ["..."],\n'
+            f'  "achievements": ["..."],\n'
+            f'  "leadership": ["..."],\n'
+            f'  "links": ["..."],\n'
+            f'  "interview_focus_areas": ["..."],\n'
+            f'  "potential_questions": ["..."]\n'
+            f"}}\n"
+            f"Do not include markdown blocks, just raw JSON."
+        )
+        reply, _ = await self._send_to_agent(prompt)
+        json_data = self._extract_json(reply)
+        from app.models.resume import ResumeAnalysis
+        return ResumeAnalysis(**json_data)
 
     async def generate_final_report(self, transcripts: List[Dict[str, Any]], generated_plan: Dict[str, Any] = None) -> Dict[str, Any]:
         plan_str = f"Original Plan:\n{json.dumps(generated_plan, indent=2)}\n\n" if generated_plan else ""

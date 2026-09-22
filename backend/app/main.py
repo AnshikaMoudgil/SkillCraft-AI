@@ -39,6 +39,9 @@ app.include_router(voice.router, prefix=api_v1_prefix)
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
+    import traceback
+    with open("error.log", "w") as f:
+        f.write(traceback.format_exc())
     print(f"Global Exception: {exc}")
     return JSONResponse(
         status_code=500,

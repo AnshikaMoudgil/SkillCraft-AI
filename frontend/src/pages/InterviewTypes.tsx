@@ -48,7 +48,7 @@ export const InterviewTypes: React.FC = () => {
       borderHover: 'hover:border-cyan-300',
       badge: 'Resume Tailored',
       tags: ['Project Deep-Dive', 'Tech Stack', 'STAR Method'],
-      targetPath: '/resume'
+      targetPath: '/interview/resume-setup'
     },
     {
       id: 'mixed',

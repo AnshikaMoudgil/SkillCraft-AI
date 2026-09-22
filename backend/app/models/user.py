@@ -3,15 +3,15 @@ from pydantic import BaseModel, Field
 
 class UserProfileSchema(BaseModel):
     id: Optional[str] = None
-    name: str = "Alex Morgan"
-    role: str = "Full Stack Developer"
+    name: Optional[str] = "Candidate"
+    role: Optional[str] = "Candidate"
     avatarUrl: Optional[str] = None
-    overallScore: int = 84
-    scoreChange: int = 6
-    interviewsCompleted: int = 12
-    codingStreak: int = 7
-    skills: List[str] = ["React", "TypeScript", "Node.js", "Python", "System Design"]
-    email: Optional[str] = "alex.morgan@example.com"
+    overallScore: Optional[int] = 0
+    scoreChange: Optional[int] = 0
+    interviewsCompleted: Optional[int] = 0
+    codingStreak: Optional[int] = 0
+    skills: Optional[List[str]] = Field(default_factory=list)
+    email: Optional[str] = None
 
 class UserProfileUpdate(BaseModel):
     name: Optional[str] = None

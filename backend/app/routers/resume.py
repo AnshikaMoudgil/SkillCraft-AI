@@ -33,33 +33,34 @@ async def upload_and_process_resume(
         content_type=file.content_type or "application/pdf"
     )
 
-    # 2. Extract structured skills & projects
-    # (High-fidelity parsed representation)
-    parsed_skills = ["React", "TypeScript", "Node.js", "Python", "Docker", "PostgreSQL", "System Design", "AWS"]
-    projects = [
-        ResumeProject(
-            title="SkillCraft AI - Interview Intelligence Platform",
-            description="Built microservices-based mock interview platform with real-time speech and adaptive agent questioning.",
-            techStack=["React", "TypeScript", "FastAPI", "Python", "Supabase", "Azure AI"]
-        ),
-        ResumeProject(
-            title="Distributed Task Orchestrator",
-            description="Designed low-latency background job queue handling 10k+ concurrent worker events with Redis and PostgreSQL.",
-            techStack=["Python", "FastAPI", "Redis", "PostgreSQL", "Docker"]
-        )
-    ]
+    from app.core.config import settings
+    from azure.core.credentials import AzureKeyCredential
+    from azure.ai.documentintelligence import DocumentIntelligenceClient
+    from app.services.foundry_agent_service import foundry_agent_service
 
-    # 3. Index resume chunks into Azure AI Search RAG
-    text_chunks = [
-        f"Candidate Resume: {file.filename}. Skills: {', '.join(parsed_skills)}.",
-        f"Project: {projects[0].title}. {projects[0].description} Stack: {', '.join(projects[0].techStack)}.",
-        f"Project: {projects[1].title}. {projects[1].description} Stack: {', '.join(projects[1].techStack)}."
-    ]
-    await rag_service.index_resume_content(
-        user_id=user_id,
-        file_name=file.filename or "resume.pdf",
-        text_chunks=text_chunks
+    if not settings.AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT or not settings.AZURE_DOCUMENT_INTELLIGENCE_KEY:
+        raise HTTPException(status_code=500, detail="Azure Document Intelligence is not configured")
+
+    client = DocumentIntelligenceClient(
+        endpoint=settings.AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT,
+        credential=AzureKeyCredential(settings.AZURE_DOCUMENT_INTELLIGENCE_KEY)
     )
+
+    try:
+        # 2. Extract text with Azure AI Document Intelligence
+        poller = client.begin_analyze_document(
+            "prebuilt-layout", 
+            body=file_bytes
+        )
+        result = poller.result()
+        extracted_text = result.content
+        
+        # 3. Analyze resume structure with Foundry Agent
+        analysis = await foundry_agent_service.analyze_resume_structure(extracted_text)
+        
+    except Exception as e:
+        print(f"Resume extraction error: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to analyze resume: {str(e)}")
 
     # 4. Save metadata record in Supabase PostgreSQL
     now_str = datetime.datetime.now(datetime.timezone.utc).isoformat()
@@ -68,17 +69,7 @@ async def upload_and_process_resume(
         "file_path": storage_path,
         "file_size": file_size_str,
         "parsed_date": now_str,
-        "skills": parsed_skills,
-        "experience_years": 4.5,
-        "education": "B.S. in Computer Science",
-        "role_match_score": 88,
-        "suggested_focus_areas": [
-            "Distributed Systems Consistency & CAP Theorem",
-            "Advanced React Fiber Scheduling & Web Workers",
-            "Database Index Tuning & Sharding"
-        ],
-        "projects": [p.model_dump() for p in projects],
-        "rag_indexed": True
+        "analysis": analysis.model_dump()
     }
     saved_record = await supabase_service.save_resume_record(user_id, record)
 
@@ -87,11 +78,16 @@ async def upload_and_process_resume(
         fileName=file.filename or "resume.pdf",
         fileSize=file_size_str,
         parsedDate=now_str,
-        skills=parsed_skills,
-        projects=projects,
-        experienceYears=4.5,
-        education="B.S. in Computer Science",
-        roleMatchScore=88,
-        suggestedFocusAreas=record["suggested_focus_areas"],
-        ragIndexed=True
+        analysis=analysis,
+        rawText=extracted_text
     )
+
+@router.get("/history")
+async def get_resume_history(
+    current_user: Dict[str, Any] = Depends(get_current_user)
+):
+    resumes = await supabase_service.get_recent_resumes(current_user["id"], limit=1)
+    if not resumes:
+        return []
+        
+    return resumes

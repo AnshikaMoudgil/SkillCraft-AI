@@ -66,9 +66,9 @@ export const Login: React.FC = () => {
       } else {
         setError('Authentication failed. Please check your email and password.');
       }
-    } catch {
+    } catch (err: any) {
       setIsLoading(false);
-      setError('An error occurred during authentication. Please try again.');
+      setError(err?.message || 'An error occurred during authentication. Please try again.');
     }
   };
 

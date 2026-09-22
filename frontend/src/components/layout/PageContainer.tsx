@@ -14,7 +14,8 @@ export interface PageContainerProps {
 export const PageContainer: React.FC<PageContainerProps> = ({
   children,
   title,
-  subtitle
+  subtitle,
+  isFullWidth
 }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isAiModalOpen, setIsAiModalOpen] = useState(false);
@@ -41,7 +42,7 @@ export const PageContainer: React.FC<PageContainerProps> = ({
           onOpenAiArchitecture={() => setIsAiModalOpen(true)}
         />
 
-        <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto animate-in fade-in duration-200">
+        <main className={`flex-1 p-4 sm:p-6 lg:p-8 w-full mx-auto animate-in fade-in duration-200 ${isFullWidth ? 'max-w-full' : 'max-w-7xl'}`}>
           {children}
         </main>
       </div>

@@ -29,7 +29,6 @@ export const Sidebar: React.FC = () => {
     { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { to: '/coding', label: 'Technical Sandbox', icon: Code2 },
     { to: '/interviews', label: 'Mock Interview', icon: MessageSquareText },
-    { to: '/resume', label: 'Resume', icon: FileText },
     { to: '/interview/report', label: 'Reports', icon: BarChart3 },
     { to: '/learning', label: 'Learning Plan', icon: BookOpen }
   ];

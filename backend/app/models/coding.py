@@ -60,3 +60,11 @@ class CodeExecutionResponse(BaseModel):
     runtimeError: Optional[str] = None
     percentileScore: Optional[float] = None
 
+class ExplainErrorRequest(BaseModel):
+    problemTitle: str
+    code: str
+    language: str
+    errorMessage: str
+
+class ExplainErrorResponse(BaseModel):
+    explanation: str

@@ -9,7 +9,7 @@ class Settings(BaseSettings):
     ENVIRONMENT: str = "development"
     PORT: int = 8000
     HOST: str = "0.0.0.0"
-    CORS_ORIGINS: Union[str, List[str]] = "http://localhost:5173,http://localhost:3000,http://127.0.0.1:5173,http://127.0.0.1:3000"
+    CORS_ORIGINS: Union[str, List[str]] = "http://localhost:5173,http://localhost:3000,http://127.0.0.1:5173,http://127.0.0.1:3000,http://localhost:5174,http://127.0.0.1:5174"
 
     # Supabase (PostgreSQL, Auth & Storage)
     SUPABASE_URL: str = ""
@@ -42,6 +42,10 @@ class Settings(BaseSettings):
     # Judge0
     JUDGE0_URL: str = "https://ce.judge0.com"
     # JUDGE0_API_KEY: str = ""  # Not needed for public CE, but good to have in config
+
+    # Azure Document Intelligence
+    AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT: str = ""
+    AZURE_DOCUMENT_INTELLIGENCE_KEY: str = ""
 
     model_config = SettingsConfigDict(
         env_file=os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), ".env"),

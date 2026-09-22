@@ -35,7 +35,7 @@ export const aiService = {
   /**
    * AI Code Review via Microsoft Foundry Agent Service
    */
-  async reviewCode(problemTitle: string, code: string): Promise<{
+  async reviewCode(problemTitle: string, code: string, language: string): Promise<{
     summary: string;
     style: string;
     efficiency: string;
@@ -50,7 +50,7 @@ export const aiService = {
       }>('/coding/review', {
         problemTitle,
         code,
-        language: 'javascript',
+        language,
       });
       return res;
     } catch (e) {
@@ -62,7 +62,7 @@ export const aiService = {
   /**
    * Analyze algorithmic complexity via Microsoft Foundry
    */
-  async analyzeComplexity(code: string): Promise<{
+  async analyzeComplexity(code: string, language: string): Promise<{
     timeComplexity: string;
     spaceComplexity: string;
     breakdown: string;
@@ -74,11 +74,29 @@ export const aiService = {
         breakdown: string;
       }>('/coding/complexity', {
         code,
-        language: 'javascript',
+        language,
       });
       return res;
     } catch (e) {
       console.error('[aiService] Backend complexity error:', e);
+      throw e;
+    }
+  },
+
+  /**
+   * Explains a compilation or runtime error
+   */
+  async explainError(problemTitle: string, code: string, language: string, errorMessage: string): Promise<string> {
+    try {
+      const res = await apiClient.post<{ explanation: string }>('/coding/explain-error', {
+        problemTitle,
+        code,
+        language,
+        errorMessage
+      });
+      return res?.explanation || 'No explanation generated.';
+    } catch (e) {
+      console.error('[aiService] Backend error explanation failed:', e);
       throw e;
     }
   },

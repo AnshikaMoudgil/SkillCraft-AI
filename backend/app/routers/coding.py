@@ -11,7 +11,9 @@ from app.models.coding import (
     CodeRunRequest,
     CodeSubmitRequest,
     CodeExecutionResponse,
-    TestResult
+    TestResult,
+    ExplainErrorRequest,
+    ExplainErrorResponse
 )
 from app.services.foundry_agent_service import foundry_agent_service
 from app.services.judge0_service import judge0_service
@@ -36,6 +38,20 @@ async def get_coding_hint(
         hintIndex=req.hintIndex,
         hasMoreHints=req.hintIndex < 3
     )
+
+@router.post("/explain-error", response_model=ExplainErrorResponse)
+async def explain_coding_error(
+    req: ExplainErrorRequest,
+    current_user: Dict[str, Any] = Depends(get_current_user)
+):
+    """Explains compilation or runtime errors via AI."""
+    explanation = await foundry_agent_service.explain_error(
+        problem_title=req.problemTitle,
+        code=req.code,
+        language=req.language,
+        error_msg=req.errorMessage
+    )
+    return ExplainErrorResponse(explanation=explanation)
 @router.get("/problems")
 async def get_coding_problems(
     current_user: Dict[str, Any] = Depends(get_current_user)
@@ -100,59 +116,24 @@ async def analyze_complexity(
         breakdown=analysis.get("breakdown", "Evaluates elements linearly.")
     )
 
-async def _execute_tests(code: str, language: str, test_cases: list, time_limit: float, memory_limit: int):
-    results = []
-    total_time = 0.0
-    max_memory = 0.0
-    compile_error = None
-    runtime_error = None
-    
-    for idx, test in enumerate(test_cases):
-        res = await judge0_service.execute_code(
-            source_code=code,
-            language=language,
-            stdin=test.get("input", ""),
-            expected_output=test.get("expected", ""),
-            cpu_time_limit=time_limit,
-            memory_limit=memory_limit
-        )
-        
-        test_status = "failed"
-        if res["passed"]:
-            test_status = "passed"
-        
-        results.append(TestResult(
-            id=test.get("id", idx + 1),
-            input=test.get("input", ""),
-            expected=test.get("expected", ""),
-            actual=res["output"],
-            status=test_status
-        ))
-        
-        total_time += res["execution_time"]
-        max_memory = max(max_memory, res["memory"])
-        
-        if res["compile_error"] and not compile_error:
-            compile_error = res["compile_error"]
-        if res["runtime_error"] and not runtime_error:
-            runtime_error = res["runtime_error"]
-            
-        if not res["passed"]:
-            break # Stop on first failure
-            
-    passed_tests = sum(1 for r in results if r.status == "passed")
-    all_passed = passed_tests == len(test_cases) and not compile_error and not runtime_error
-    
-    return {
-        "passed": all_passed,
-        "passedTests": passed_tests,
-        "totalTests": len(test_cases),
-        "runtimeMs": total_time * 1000, # Convert to ms
-        "memoryMb": max_memory,
-        "results": results,
-        "compileError": compile_error,
-        "runtimeError": runtime_error
-    }
+async def _execute_tests(problem_title: str, code: str, language: str, test_cases: list, time_limit: float, memory_limit: int):
+    # Use Azure Foundry AI to simulate execution for all test cases at once
+    try:
+        res = await foundry_agent_service.evaluate_test_cases(problem_title, code, language, test_cases)
+        return res
+    except Exception as e:
+        print(f"Error in AI execution simulation: {e}")
+        # Fallback empty response
+        return {
+            "passed": False,
+            "passedTests": 0,
+            "totalTests": len(test_cases),
+            "runtimeMs": 0,
+            "memoryMb": 0,
+            "results": [],
+            "compileError": str(e),
+            "runtimeError": None
+        }
 
 @router.post("/run", response_model=CodeExecutionResponse)
 async def run_code(
@@ -169,6 +150,7 @@ async def run_code(
         return CodeExecutionResponse(passed=True, totalTests=0, passedTests=0, runtimeMs=0, memoryMb=0, results=[])
 
     res = await _execute_tests(
+        req.problemTitle,
         req.code, 
         req.language, 
         visible_tests, 
@@ -202,6 +184,7 @@ async def submit_code(
         raise HTTPException(status_code=400, detail="No test cases found for problem")
 
     res = await _execute_tests(
+        req.problemTitle,
         req.code, 
         req.language, 
         all_tests, 
@@ -244,7 +227,7 @@ async def submit_code(
     await supabase_service.save_coding_submission(current_user.get("id"), submission_data)
     
     # Strip hidden tests from results returned to client
-    visible_results = [r for r in res["results"] if r.id in [t["id"] for t in problem.get("visible_test_cases", [])]]
+    visible_results = [r for r in res["results"] if r.get("id") in [t["id"] for t in problem.get("visible_test_cases", [])]]
     
     return CodeExecutionResponse(
         passed=res["passed"],

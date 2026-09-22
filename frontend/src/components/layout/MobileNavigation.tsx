@@ -30,7 +30,6 @@ export const MobileDrawer: React.FC<MobileNavigationProps> = ({ isOpen, onClose 
     { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { to: '/coding', label: 'Technical Sandbox', icon: Code2 },
     { to: '/interviews', label: 'Mock Interview', icon: MessageSquareText },
-    { to: '/resume', label: 'Resume', icon: FileText },
     { to: '/interview/voice', label: 'Voice Interview', icon: Mic },
     { to: '/interview/live', label: 'Live Interview', icon: Video },
     { to: '/interview/transcript', label: 'Transcript & AI', icon: FileSpreadsheet },

@@ -38,22 +38,27 @@ async def get_current_user(authorization: Optional[str] = Header(None)) -> Dict[
             detail="Invalid authorization header format",
         )
 
-    # If Supabase is fully configured, decode and verify the JWT
-    if settings.is_supabase_configured and settings.SUPABASE_JWT_SECRET and "your-supabase" not in settings.SUPABASE_JWT_SECRET:
+    # Allow fallback demo token in development mode
+    if settings.ENVIRONMENT == "development" and token == "mock-demo-token":
+        return default_dev_user
+
+    # If Supabase is fully configured, verify the JWT via Supabase API
+    if settings.is_supabase_configured:
         try:
-            payload = jwt.decode(
-                token,
-                settings.SUPABASE_JWT_SECRET,
-                algorithms=["HS256"],
-                audience="authenticated"
-            )
-            return {
-                "id": payload.get("sub"),
-                "email": payload.get("email"),
-                "name": payload.get("user_metadata", {}).get("name", "Candidate"),
-                "role": payload.get("role", "authenticated")
-            }
-        except jwt.PyJWTError as e:
+            from supabase import create_client
+            supabase_client = create_client(settings.SUPABASE_URL, settings.SUPABASE_KEY)
+            user_response = supabase_client.auth.get_user(token)
+            
+            if user_response and user_response.user:
+                return {
+                    "id": user_response.user.id,
+                    "email": user_response.user.email,
+                    "name": user_response.user.user_metadata.get("name", "Candidate"),
+                    "role": user_response.user.role or "authenticated"
+                }
+            else:
+                raise ValueError("User not found in token")
+        except Exception as e:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail=f"Invalid Supabase token: {str(e)}",

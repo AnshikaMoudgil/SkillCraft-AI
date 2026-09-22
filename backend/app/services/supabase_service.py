@@ -199,5 +199,18 @@ class SupabaseService:
         interviews = [v for v in self._mock_interviews.values() if v.get("user_id") == user_id]
         # sort by created_at missing, but fallback shouldn't happen much
         return interviews[:limit]
+    async def get_recent_resumes(self, user_id: str, limit: int = 5) -> List[Dict[str, Any]]:
+        if self._client:
+            try:
+                res = self._client.table("resumes").select("*").eq("user_id", user_id).order("created_at", desc=True).limit(limit).execute()
+                if res.data:
+                    return res.data
+                return []
+            except Exception as e:
+                print(f"[SupabaseService] get_recent_resumes error: {e}")
+
+        # In-memory fallback
+        resumes = [v for v in self._mock_resumes.values() if v.get("user_id") == user_id]
+        return resumes[:limit]
 
 supabase_service = SupabaseService()

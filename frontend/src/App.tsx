@@ -3,8 +3,8 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import { Login } from './pages/Login';
 import { Dashboard } from './pages/Dashboard';
 import { InterviewTypes } from './pages/InterviewTypes';
-import { ResumeUpload } from './pages/ResumeUpload';
 import { InterviewSetup } from './pages/InterviewSetup';
+import { ResumeInterviewSetup } from './pages/ResumeInterviewSetup';
 import { CodingSandbox } from './pages/CodingSandbox';
 import { VoiceInterview } from './pages/VoiceInterview';
 import { LiveInterview } from './pages/LiveInterview';
@@ -28,7 +28,7 @@ export const App: React.FC = () => {
       {/* Core Platform Routes (Protected) */}
       <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
       <Route path="/interviews" element={<ProtectedRoute><InterviewTypes /></ProtectedRoute>} />
-      <Route path="/resume" element={<ProtectedRoute><ResumeUpload /></ProtectedRoute>} />
+      <Route path="/interview/resume-setup" element={<ProtectedRoute><ResumeInterviewSetup /></ProtectedRoute>} />
       <Route path="/interview/setup" element={<ProtectedRoute><InterviewSetup /></ProtectedRoute>} />
       <Route path="/coding" element={<ProtectedRoute><CodingSandbox /></ProtectedRoute>} />
       <Route path="/interview/voice" element={<ProtectedRoute><VoiceInterview /></ProtectedRoute>} />
