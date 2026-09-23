@@ -13,7 +13,9 @@ from app.models.coding import (
     CodeExecutionResponse,
     TestResult,
     ExplainErrorRequest,
-    ExplainErrorResponse
+    ExplainErrorResponse,
+    CodingSessionStartRequest,
+    CodingSessionFinishRequest
 )
 from app.services.foundry_agent_service import foundry_agent_service
 from app.services.judge0_service import judge0_service

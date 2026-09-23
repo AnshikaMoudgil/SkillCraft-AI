@@ -37,7 +37,7 @@ export const InterviewTypes: React.FC = () => {
       borderHover: 'hover:border-indigo-300',
       badge: 'Hands-on IDE',
       tags: ['Live Compiler', 'Unit Tests', 'Complexity'],
-      targetPath: '/coding'
+      targetPath: '/interview/coding-setup'
     },
     {
       id: 'resume',
@@ -59,7 +59,7 @@ export const InterviewTypes: React.FC = () => {
       borderHover: 'hover:border-purple-300',
       badge: 'Complete Simulation',
       tags: ['Technical + Behavioral', 'Adaptive AI', 'Full Report'],
-      targetPath: '/interview/setup'
+      targetPath: '/interview/mixed-setup'
     }
   ];
 

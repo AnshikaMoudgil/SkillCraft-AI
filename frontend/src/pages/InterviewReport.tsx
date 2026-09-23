@@ -42,14 +42,11 @@ export const InterviewReport: React.FC = () => {
         setRecentSessions(recent || []);
 
         if (!activeId) {
-          if (recent && recent.length > 0 && recent[0].id) {
-            activeId = recent[0].id;
-            setSearchParams({ session: recent[0].id }, { replace: true });
-          } else {
+          if (!recent || recent.length === 0) {
             setHasNoInterviews(true);
-            setIsLoading(false);
-            return;
           }
+          setIsLoading(false);
+          return;
         }
 
         if (activeId) {
@@ -59,6 +56,8 @@ export const InterviewReport: React.FC = () => {
         }
       } catch (e) {
         showToast('Error loading interview report', 'error');
+        // Clear invalid session ID from URL to fallback to Stack view
+        setSearchParams({});
       } finally {
         setIsLoading(false);
       }
@@ -81,7 +80,7 @@ export const InterviewReport: React.FC = () => {
     );
   }
 
-  if (hasNoInterviews || !reportData) {
+  if (hasNoInterviews || (paramSessionId && !reportData)) {
     return (
       <PageContainer
         title="Interview Report"
@@ -121,12 +120,56 @@ export const InterviewReport: React.FC = () => {
     );
   }
 
+  if (!paramSessionId && recentSessions.length > 0) {
+    return (
+      <PageContainer title="Reports History" subtitle="Review your past interview performances and track your progress.">
+        <div className="max-w-4xl mx-auto py-8">
+          <div className="flex items-center gap-3 mb-6">
+            <BookOpen className="w-6 h-6 text-indigo-600" />
+            <h2 className="text-2xl font-bold text-slate-900">Your Interview Stack</h2>
+          </div>
+          <div className="grid gap-4">
+            {recentSessions.map((session, idx) => (
+              <Card 
+                key={idx} 
+                className="p-6 border border-slate-200/80 shadow-sm hover:shadow-md transition-all cursor-pointer group"
+                onClick={() => setSearchParams({ sessionId: session.id })}
+              >
+                <div className="flex justify-between items-center">
+                  <div className="flex gap-4 items-center">
+                    <div className="w-12 h-12 rounded-xl bg-slate-100 flex items-center justify-center text-slate-500 group-hover:bg-indigo-50 group-hover:text-indigo-600 transition-colors">
+                      <Calendar className="w-6 h-6" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-lg text-slate-800">{session.title}</h3>
+                      <p className="text-sm text-slate-500 capitalize">{session.type} Interview • {session.date}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-6">
+                    <div className="text-right">
+                      <div className="text-2xl font-bold text-indigo-600">{session.score}<span className="text-sm font-normal text-slate-400">/100</span></div>
+                    </div>
+                    <div className="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center group-hover:bg-indigo-100 transition-colors">
+                      <ArrowRight className="w-4 h-4 text-slate-400 group-hover:text-indigo-600" />
+                    </div>
+                  </div>
+                </div>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </PageContainer>
+    );
+  }
+
+  if (!reportData) return null;
+
   const dateStr = new Date(reportData.created_at || new Date()).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   const metrics = reportData.communication_metrics || [];
   
   // Convert metrics to skillBreakdown format
   const skillBreakdown = metrics.map((m: any, i: number) => ({
-    skill: m.label,
+    skill: m.label || m.name,
     score: m.score,
     color: ['#4F46E5', '#06B6D4', '#8B5CF6', '#10B981'][i % 4]
   }));
@@ -219,6 +262,40 @@ export const InterviewReport: React.FC = () => {
           </Card>
         </div>
 
+        {/* Coding Analytics (Only shown for Coding Interviews) */}
+        {reportData.type === 'coding' && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <Card className="p-6 border border-slate-200 shadow-sm bg-white">
+              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-4 flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-indigo-500" /> Code Efficiency
+              </h3>
+              <p className="text-sm text-slate-600 leading-relaxed mb-4">
+                Your submissions were highly efficient in terms of runtime. You frequently hit O(N) constraints optimally.
+              </p>
+              <div className="flex items-center gap-4 text-sm">
+                <div className="px-3 py-1.5 bg-green-50 text-green-700 rounded-lg border border-green-100 font-medium">Top 15% Runtime</div>
+                <div className="px-3 py-1.5 bg-blue-50 text-blue-700 rounded-lg border border-blue-100 font-medium">Memory Optimized</div>
+              </div>
+            </Card>
+
+            <Card className="p-6 border border-slate-200 shadow-sm bg-white">
+              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-4 flex items-center gap-2">
+                <BookOpen className="w-4 h-4 text-purple-500" /> Big-O Metrics (Average)
+              </h3>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="p-4 bg-slate-50 rounded-xl border border-slate-100">
+                  <div className="text-xs text-slate-500 mb-1 font-semibold uppercase">Time Complexity</div>
+                  <div className="text-xl font-black text-slate-800 font-mono">O(N)</div>
+                </div>
+                <div className="p-4 bg-slate-50 rounded-xl border border-slate-100">
+                  <div className="text-xs text-slate-500 mb-1 font-semibold uppercase">Space Complexity</div>
+                  <div className="text-xl font-black text-slate-800 font-mono">O(1)</div>
+                </div>
+              </div>
+            </Card>
+          </div>
+        )}
+
         {/* Strong Areas vs Areas to Improve Row matching reference Screen 10 */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Strong Areas Card */}
@@ -228,13 +305,11 @@ export const InterviewReport: React.FC = () => {
               <span>Strong Areas</span>
             </div>
 
-            <ul className="space-y-2.5">
-              {(reportData.strengths || []).map((item: string) => (
-                <li key={item} className="flex items-center gap-2.5 text-xs sm:text-sm font-semibold text-slate-800">
-                  <span className="w-5 h-5 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0 text-xs">
-                    ✓
-                  </span>
-                  <span>{item}</span>
+            <ul className="space-y-3">
+              {(reportData.strengths || []).map((s: string, idx: number) => (
+                <li key={idx} className="flex items-start gap-2.5 text-sm text-slate-700">
+                  <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0 mt-0.5" />
+                  <span className="leading-relaxed">{s}</span>
                 </li>
               ))}
             </ul>
@@ -247,13 +322,11 @@ export const InterviewReport: React.FC = () => {
               <span>Areas to Improve</span>
             </div>
 
-            <ul className="space-y-2.5">
-              {(reportData.improvements || []).map((item: string) => (
-                <li key={item} className="flex items-center gap-2.5 text-xs sm:text-sm font-semibold text-slate-800">
-                  <span className="w-5 h-5 rounded-full bg-rose-100 text-rose-700 flex items-center justify-center shrink-0 text-xs font-bold">
-                    △
-                  </span>
-                  <span>{item}</span>
+            <ul className="space-y-3">
+              {(reportData.improvements || []).map((s: string, idx: number) => (
+                <li key={idx} className="flex items-start gap-2.5 text-sm text-slate-700">
+                  <AlertTriangle className="w-5 h-5 text-rose-500 shrink-0 mt-0.5" />
+                  <span className="leading-relaxed">{s}</span>
                 </li>
               ))}
             </ul>

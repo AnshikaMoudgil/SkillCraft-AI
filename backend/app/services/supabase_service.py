@@ -96,7 +96,7 @@ class SupabaseService:
         return record
 
     async def create_interview(self, user_id: str, session_data: Dict[str, Any]) -> Dict[str, Any]:
-        session_id = str(uuid.uuid4())
+        session_id = session_data.get("id") or str(uuid.uuid4())
         session_data["id"] = session_id
         session_data["user_id"] = user_id
 
@@ -153,9 +153,13 @@ class SupabaseService:
         return self._mock_transcripts.get(session_id, [])
 
     async def update_interview_evaluation(self, session_id: str, eval_data: Dict[str, Any]) -> Dict[str, Any]:
+        # Strip invalid columns for Supabase schema
+        clean_eval = dict(eval_data)
+        clean_eval.pop("topicsToPractice", None)
+
         if self._client:
             try:
-                res = self._client.table("interviews").update(eval_data).eq("id", session_id).execute()
+                res = self._client.table("interviews").update(clean_eval).eq("id", session_id).execute()
                 if res.data:
                     return res.data[0]
             except Exception as e:
@@ -188,7 +192,7 @@ class SupabaseService:
     async def get_recent_interviews(self, user_id: str, limit: int = 5) -> List[Dict[str, Any]]:
         if self._client:
             try:
-                res = self._client.table("interviews").select("*").eq("user_id", user_id).order("created_at", desc=True).limit(limit).execute()
+                res = self._client.table("interviews").select("*").eq("user_id", user_id).order("started_at", desc=True).limit(limit).execute()
                 if res.data:
                     return res.data
                 return []
@@ -199,6 +203,14 @@ class SupabaseService:
         interviews = [v for v in self._mock_interviews.values() if v.get("user_id") == user_id]
         # sort by created_at missing, but fallback shouldn't happen much
         return interviews[:limit]
+
+    async def update_profile(self, user_id: str, profile_data: Dict[str, Any]) -> None:
+        if self._client:
+            try:
+                self._client.table("profiles").update(profile_data).eq("id", user_id).execute()
+            except Exception as e:
+                print(f"[SupabaseService] update_profile error: {e}")
+
     async def get_recent_resumes(self, user_id: str, limit: int = 5) -> List[Dict[str, Any]]:
         if self._client:
             try:

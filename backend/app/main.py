@@ -2,7 +2,7 @@ from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
-from app.routers import auth, interview, coding, resume, voice
+from app.routers import auth, interview, coding, resume, voice, mixed
 
 app = FastAPI(
     title=settings.APP_NAME,
@@ -36,6 +36,7 @@ app.include_router(interview.router, prefix=api_v1_prefix)
 app.include_router(coding.router, prefix=api_v1_prefix)
 app.include_router(resume.router, prefix=api_v1_prefix)
 app.include_router(voice.router, prefix=api_v1_prefix)
+app.include_router(mixed.router, prefix=api_v1_prefix)
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):

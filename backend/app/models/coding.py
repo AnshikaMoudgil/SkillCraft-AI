@@ -60,6 +60,7 @@ class CodeExecutionResponse(BaseModel):
     runtimeError: Optional[str] = None
     percentileScore: Optional[float] = None
 
+
 class ExplainErrorRequest(BaseModel):
     problemTitle: str
     code: str
@@ -68,3 +69,12 @@ class ExplainErrorRequest(BaseModel):
 
 class ExplainErrorResponse(BaseModel):
     explanation: str
+
+class CodingSessionStartRequest(BaseModel):
+    role: str = "Software Engineer"
+    difficulty: str = "Intermediate"
+    numProblems: int = 2
+
+class CodingSessionFinishRequest(BaseModel):
+    sessionId: str
+    results: list[dict] # { problemId, score, timeTaken }

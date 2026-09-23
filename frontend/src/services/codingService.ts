@@ -41,5 +41,26 @@ export const codingService = {
       problemTitle
     });
     return res;
+  },
+
+  async getExplanation(problemTitle: string, code: string, language: string, errorMessage: string): Promise<string> {
+    const payload = { problemTitle, code, language, errorMessage };
+    const res = await apiClient.post<{ explanation: string }>('/coding/explain-error', payload);
+    return res.explanation;
+  },
+
+  async startSession(config: any): Promise<{ session_id: string }> {
+    return await apiClient.post('/coding/session/start', {
+      role: config.role || "Software Engineer",
+      difficulty: config.difficulty || "Intermediate",
+      numProblems: config.numProblems || 2
+    });
+  },
+
+  async finishSession(sessionId: string, results: any[]): Promise<{ session_id: string, final_score: number }> {
+    return await apiClient.post('/coding/session/finish', {
+      sessionId,
+      results
+    });
   }
 };

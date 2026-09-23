@@ -5,6 +5,10 @@ import { Dashboard } from './pages/Dashboard';
 import { InterviewTypes } from './pages/InterviewTypes';
 import { InterviewSetup } from './pages/InterviewSetup';
 import { ResumeInterviewSetup } from './pages/ResumeInterviewSetup';
+import { CodingInterviewSetup } from './pages/CodingInterviewSetup';
+import { MixedInterviewSetup } from './pages/MixedInterviewSetup';
+import { CodingInterview } from './pages/CodingInterview';
+import { MixedInterview } from './pages/MixedInterview';
 import { CodingSandbox } from './pages/CodingSandbox';
 import { VoiceInterview } from './pages/VoiceInterview';
 import { LiveInterview } from './pages/LiveInterview';
@@ -30,6 +34,12 @@ export const App: React.FC = () => {
       <Route path="/interviews" element={<ProtectedRoute><InterviewTypes /></ProtectedRoute>} />
       <Route path="/interview/resume-setup" element={<ProtectedRoute><ResumeInterviewSetup /></ProtectedRoute>} />
       <Route path="/interview/setup" element={<ProtectedRoute><InterviewSetup /></ProtectedRoute>} />
+      
+      <Route path="/interview/coding-setup" element={<ProtectedRoute><CodingInterviewSetup /></ProtectedRoute>} />
+      <Route path="/interview/mixed-setup" element={<ProtectedRoute><MixedInterviewSetup /></ProtectedRoute>} />
+      <Route path="/interview/coding" element={<ProtectedRoute><CodingInterview /></ProtectedRoute>} />
+      <Route path="/interview/mixed" element={<ProtectedRoute><MixedInterview /></ProtectedRoute>} />
+      
       <Route path="/coding" element={<ProtectedRoute><CodingSandbox /></ProtectedRoute>} />
       <Route path="/interview/voice" element={<ProtectedRoute><VoiceInterview /></ProtectedRoute>} />
       <Route path="/interview/live" element={<ProtectedRoute><LiveInterview /></ProtectedRoute>} />
