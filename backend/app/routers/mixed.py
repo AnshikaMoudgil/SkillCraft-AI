@@ -255,8 +255,28 @@ async def finish_session(
             "improvements": ["Deep diving into specific topics"] if avg < 80 else [],
             "topicsToPractice": ["Data Structures", "System Design"] if avg < 70 else [],
             "communication_metrics": [
-                {"name": "Clarity", "score": int(avg * 0.9), "feedback": "Good structure in answers"},
-                {"name": "Confidence", "score": int(avg * 0.95), "feedback": "Steady delivery"}
+                {"name": "Clarity", "score": int(avg * 0.9) if avg > 0 else 50, "feedback": "Good structure in answers" if avg > 0 else "Need more detailed answers"},
+                {"name": "Confidence", "score": int(avg * 0.95) if avg > 0 else 50, "feedback": "Steady delivery" if avg > 0 else "More practice needed"}
+            ],
+            "preparation_plan": [
+                {
+                    "day": 1,
+                    "topic": "Core Fundamentals",
+                    "description": "Review basic concepts and definitions.",
+                    "duration": "45m"
+                },
+                {
+                    "day": 2,
+                    "topic": "Problem Solving Practice",
+                    "description": "Solve easy to medium coding challenges.",
+                    "duration": "60m"
+                },
+                {
+                    "day": 3,
+                    "topic": "Mock Interview Simulation",
+                    "description": "Take another mock interview to track progress.",
+                    "duration": "45m"
+                }
             ]
         }
     )

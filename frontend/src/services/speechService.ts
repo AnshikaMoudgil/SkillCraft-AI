@@ -19,6 +19,8 @@ export interface SpeechTokenResponse {
   isConfigured: boolean;
 }
 
+let currentAudio: HTMLAudioElement | null = null;
+
 export const speechService = {
   /**
    * Fetches Azure AI Speech STS token for browser SDK streaming
@@ -46,6 +48,20 @@ export const speechService = {
     } catch (e) {
       console.warn('[speechService] Audio recognition failed:', e);
       return '';
+    }
+  },
+
+  /**
+   * Stops currently playing speech synthesis.
+   */
+  stopSpeech() {
+    if (currentAudio) {
+      currentAudio.pause();
+      currentAudio.currentTime = 0;
+      currentAudio = null;
+    }
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
     }
   },
 
@@ -86,7 +102,14 @@ export const speechService = {
         const audioBlob = await response.blob();
         console.log(`[VoiceDebug] Blob created, size: ${audioBlob.size}`);
         const audioUrl = URL.createObjectURL(audioBlob);
+        
+        // Stop any currently playing audio before starting new one
+        if (currentAudio) {
+          currentAudio.pause();
+        }
+        
         const audio = new Audio(audioUrl);
+        currentAudio = audio;
         
         try {
           await audio.play();

@@ -156,6 +156,7 @@ class SupabaseService:
         # Strip invalid columns for Supabase schema
         clean_eval = dict(eval_data)
         clean_eval.pop("topicsToPractice", None)
+        clean_eval.pop("preparation_plan", None)
 
         if self._client:
             try:
@@ -163,7 +164,10 @@ class SupabaseService:
                 if res.data:
                     return res.data[0]
             except Exception as e:
-                print(f"[SupabaseService] update_interview_evaluation error: {e}")
+                error_msg = f"[SupabaseService] update_interview_evaluation error: {e}"
+                print(error_msg)
+                with open("supabase_error.log", "a") as f:
+                    f.write(error_msg + "\\n")
 
         if session_id in self._mock_interviews:
             self._mock_interviews[session_id].update(eval_data)

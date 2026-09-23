@@ -56,6 +56,8 @@ export const VoiceInterview: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { showToast } = useToast();
+  
+  const initializedRef = useRef(false);
 
   const config = location.state?.config || {
     title: 'Quick Mock Interview',
@@ -68,6 +70,9 @@ export const VoiceInterview: React.FC = () => {
   };
 
   useEffect(() => {
+    if (initializedRef.current) return;
+    initializedRef.current = true;
+
     const initSession = async () => {
       try {
         console.log("[InterviewFlow] Interview initialization");
@@ -101,6 +106,10 @@ export const VoiceInterview: React.FC = () => {
     };
     
     initSession();
+    
+    return () => {
+      speechService.stopSpeech();
+    };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -305,6 +314,7 @@ export const VoiceInterview: React.FC = () => {
   };
 
   const handleEndInterview = async () => {
+    speechService.stopSpeech();
     setIsRecording(false);
     setInterviewState(InterviewState.COMPLETED);
     if (sessionId) {

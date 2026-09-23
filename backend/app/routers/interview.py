@@ -208,10 +208,15 @@ async def evaluate_interview(
     interview = await supabase_service.get_interview(req.sessionId)
     generated_plan = interview.get("generated_plan") if interview else None
 
-    # 1. Synthesize transcript analysis via Foundry Agent
-    eval_result = await foundry_agent_service.generate_final_report(req.transcripts, generated_plan)
+    # 1. Fetch transcripts if they are empty
+    transcripts_to_eval = req.transcripts
+    if not transcripts_to_eval:
+        transcripts_to_eval = await supabase_service.get_transcripts(req.sessionId)
 
-    # 2. Update interview in Supabase
+    # 2. Synthesize transcript analysis via Foundry Agent
+    eval_result = await foundry_agent_service.generate_final_report(transcripts_to_eval, generated_plan)
+
+    # 3. Update interview in Supabase
     update_data = {
         "score": eval_result.get("overallScore", 0),
         "summary_feedback": eval_result.get("summary", ""),
@@ -302,7 +307,18 @@ async def get_latest_learning_plan(
     latest = interviews[0]
     plan = latest.get("preparation_plan")
     if not plan:
-        return []
+        improvements = latest.get("improvements", [])
+        plan = []
+        for i, imp in enumerate(improvements[:3]):
+            plan.append({
+                "topic": imp,
+                "description": f"Focus on improving {imp.lower()}",
+                "duration": "45m"
+            })
+        if not plan:
+            plan = [
+                {"topic": "General Review", "description": "Review core concepts from your interview.", "duration": "45m"}
+            ]
         
     # Map to frontend DayPlan schema
     frontend_plan = []
