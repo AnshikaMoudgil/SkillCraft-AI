@@ -1,5 +1,7 @@
+import os
 from fastapi import FastAPI, Request
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, FileResponse
+from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
 from app.routers import auth, interview, coding, resume, voice, mixed
@@ -66,13 +68,32 @@ async def health_check():
         }
     }
 
-@app.get("/", tags=["Root"])
-async def root_info():
-    return {
-        "message": "Welcome to SkillCraftAI Backend API",
-        "documentation": "/docs",
-        "health": "/health"
-    }
+# Serve frontend distribution if present (built in container / unified deployment)
+frontend_dist = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "frontend", "dist"))
+
+if os.path.exists(frontend_dist):
+    assets_dir = os.path.join(frontend_dist, "assets")
+    if os.path.exists(assets_dir):
+        app.mount("/assets", StaticFiles(directory=assets_dir), name="assets")
+
+    @app.get("/{full_path:path}", tags=["Frontend"])
+    async def serve_spa(full_path: str):
+        # Allow API, docs, redoc, and health check to pass through
+        if full_path.startswith("api/") or full_path in ("docs", "redoc", "health"):
+            return JSONResponse(status_code=404, content={"detail": "Not found"})
+        file_path = os.path.join(frontend_dist, full_path)
+        if full_path and os.path.exists(file_path) and os.path.isfile(file_path):
+            return FileResponse(file_path)
+        return FileResponse(os.path.join(frontend_dist, "index.html"))
+else:
+    @app.get("/", tags=["Root"])
+    async def root_info():
+        return {
+            "message": "Welcome to SkillCraftAI Backend API",
+            "documentation": "/docs",
+            "health": "/health"
+        }
+
 
 if __name__ == "__main__":
     import uvicorn
